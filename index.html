@@ -3,232 +3,543 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VertictHub</title>
+<title>VertictHub — Key System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-:root {
-  --bg:#04040a; --card:#090912; --card2:#0e0e1a; --border:rgba(120,120,255,0.15);
-  --accent:#6060ff; --glow:rgba(96,96,255,0.35); --text:#c8c8ee; --muted:#4a4a6a;
-  --green:#3dffaa; --red:#ff5566; --yellow:#ffcc44;
-  --mono:'Space Mono',monospace; --display:'Syne',sans-serif;
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#020409;
+  --surface:#080d1a;
+  --surface2:#0d1424;
+  --border:rgba(0,200,255,0.12);
+  --border2:rgba(0,200,255,0.25);
+  --cyan:#00c8ff;
+  --cyan2:#00ffe0;
+  --purple:#7b4fff;
+  --glow:rgba(0,200,255,0.2);
+  --glow2:rgba(123,79,255,0.2);
+  --text:#c4d4e8;
+  --muted:#3a4a5e;
+  --muted2:#5a6a7e;
+  --green:#00ffb3;
+  --red:#ff3355;
+  --yellow:#ffdd00;
+  --mono:'JetBrains Mono',monospace;
+  --display:'Rajdhani',sans-serif;
 }
-body { background:var(--bg); color:var(--text); font-family:var(--display); min-height:100vh; display:flex; align-items:center; justify-content:center; overflow-x:hidden; }
-body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(96,96,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(96,96,255,0.04) 1px,transparent 1px); background-size:48px 48px; animation:gridDrift 20s linear infinite; pointer-events:none; }
-body::after { content:''; position:fixed; inset:0; background:radial-gradient(ellipse 60% 60% at 50% 50%,rgba(60,60,160,0.12) 0%,transparent 70%); pointer-events:none; }
-@keyframes gridDrift { 0%{transform:translate(0,0)} 100%{transform:translate(48px,48px)} }
 
-.page { display:none; position:relative; z-index:1; width:100%; padding:20px; min-height:100vh; align-items:flex-start; justify-content:center; padding-top:40px; padding-bottom:40px; }
-.page.active { display:flex; }
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--display);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow-x:hidden;
+}
 
-.card { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:32px; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(60,60,180,0.12); animation:fadeUp 0.5s ease both; width:100%; }
-.card::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:radial-gradient(circle,rgba(96,96,255,0.2) 0%,transparent 70%); pointer-events:none; }
-@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+/* ── BACKGROUND ── */
+.bg-wrap{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.bg-grid{
+  position:absolute;inset:-50%;
+  background-image:
+    linear-gradient(rgba(0,200,255,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,200,255,0.03) 1px,transparent 1px);
+  background-size:40px 40px;
+  animation:gridMove 30s linear infinite;
+}
+@keyframes gridMove{0%{transform:translate(0,0)}100%{transform:translate(40px,40px)}}
+.bg-orb1{position:absolute;top:-20%;left:-10%;width:70vw;height:70vw;max-width:600px;max-height:600px;background:radial-gradient(circle,rgba(0,200,255,0.06) 0%,transparent 60%);animation:orbFloat 12s ease-in-out infinite alternate}
+.bg-orb2{position:absolute;bottom:-20%;right:-10%;width:60vw;height:60vw;max-width:500px;max-height:500px;background:radial-gradient(circle,rgba(123,79,255,0.06) 0%,transparent 60%);animation:orbFloat 15s ease-in-out infinite alternate-reverse}
+.bg-scan{position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,0.02) 50%);background-size:100% 4px;pointer-events:none;opacity:0.3}
+@keyframes orbFloat{0%{transform:translate(0,0) scale(1)}100%{transform:translate(20px,30px) scale(1.1)}}
 
-/* HEADER */
-.header { text-align:center; margin-bottom:28px; }
-.logo-ring { width:64px; height:64px; border-radius:50%; border:2px solid var(--accent); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; font-size:24px; box-shadow:0 0 20px var(--glow); animation:pulse 3s ease-in-out infinite; overflow:hidden; padding:0; }
-.logo-ring img { width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
-@keyframes pulse { 0%,100%{box-shadow:0 0 20px var(--glow)} 50%{box-shadow:0 0 40px var(--glow)} }
-.header h1 { font-size:22px; font-weight:800; color:#fff; letter-spacing:-0.5px; }
-.header h1 span { color:var(--accent); }
-.header p { font-size:12px; color:var(--muted); margin-top:4px; font-family:var(--mono); }
+/* ── PAGES ── */
+.page{display:none;position:relative;z-index:1;width:100%;padding:20px;min-height:100vh;justify-content:center;align-items:flex-start;padding-top:40px;padding-bottom:60px}
+.page.active{display:flex}
 
-/* BUTTONS */
-.btn { display:block; width:100%; padding:13px; border-radius:10px; border:none; font-family:var(--display); font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; text-decoration:none; text-align:center; }
-.btn:disabled { opacity:0.5; cursor:not-allowed; }
-.btn-primary { background:var(--accent); color:#fff; box-shadow:0 4px 20px rgba(96,96,255,0.35); }
-.btn-primary:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 28px rgba(96,96,255,0.5); }
-.btn-ghost { background:rgba(255,255,255,0.03); color:var(--muted); border:1px solid var(--border); }
-.btn-ghost:hover:not(:disabled) { color:var(--text); border-color:rgba(255,255,255,0.15); }
-.btn-danger { background:rgba(255,85,102,0.08); color:var(--red); border:1px solid rgba(255,85,102,0.25); }
-.btn-danger:hover:not(:disabled) { background:rgba(255,85,102,0.15); }
-.btn-yellow { background:rgba(255,204,68,0.08); color:var(--yellow); border:1px solid rgba(255,204,68,0.25); }
-.btn-yellow:hover:not(:disabled) { background:rgba(255,204,68,0.15); }
+/* ── GET KEY PAGE ── */
+#pageGetkey{align-items:center;padding-top:20px}
+.getkey-wrap{width:100%;max-width:420px}
 
-/* INPUTS */
-.input-wrap { background:var(--card2); border:1px solid rgba(50,50,90,1); border-radius:10px; overflow:hidden; margin-bottom:10px; }
-.input-wrap input, .input-wrap select { width:100%; padding:11px 14px; background:transparent; border:none; outline:none; color:var(--text); font-family:var(--mono); font-size:12px; }
-.input-wrap input::placeholder { color:var(--muted); }
-.input-wrap select option { background:var(--card2); }
+/* ── LOGO ── */
+.vh-logo{text-align:center;margin-bottom:36px;animation:fadeDown 0.6s ease both}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+.logo-avatar{
+  width:80px;height:80px;border-radius:50%;
+  margin:0 auto 16px;
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+.logo-avatar::before{
+  content:'';position:absolute;inset:-3px;border-radius:50%;
+  background:conic-gradient(var(--cyan),var(--purple),var(--cyan));
+  animation:spin 4s linear infinite;
+  z-index:0;
+}
+.logo-avatar::after{content:'';position:absolute;inset:2px;border-radius:50%;background:var(--bg);z-index:1}
+.logo-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;position:relative;z-index:2}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.vh-name{font-size:32px;font-weight:700;letter-spacing:4px;text-transform:uppercase}
+.vh-name .v{color:var(--cyan)}
+.vh-name .h{color:var(--purple)}
+.vh-tagline{font-family:var(--mono);font-size:11px;color:var(--muted2);letter-spacing:2px;margin-top:4px}
 
-/* KEY RESULT */
-.key-result { display:none; margin-top:20px; padding:16px; background:rgba(61,255,170,0.04); border:1px solid rgba(61,255,170,0.25); border-radius:12px; text-align:center; animation:fadeUp 0.4s ease both; }
-.key-label { font-size:10px; font-family:var(--mono); color:var(--muted); text-transform:uppercase; letter-spacing:2px; margin-bottom:8px; }
-.key-text { font-family:var(--mono); font-size:16px; font-weight:700; color:var(--green); letter-spacing:2px; word-break:break-all; margin-bottom:6px; }
-.key-expires { font-size:10px; font-family:var(--mono); color:var(--muted); margin-bottom:12px; }
-.btn-copy { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; background:rgba(61,255,170,0.08); border:1px solid rgba(61,255,170,0.3); border-radius:8px; color:var(--green); font-family:var(--mono); font-size:12px; cursor:pointer; transition:all 0.2s; }
-.btn-copy:hover { background:rgba(61,255,170,0.15); }
+/* ── CARD ── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:28px;
+  position:relative;
+  overflow:hidden;
+  animation:fadeUp 0.5s ease 0.1s both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan),var(--purple),transparent);
+  opacity:0.6;
+}
 
-/* HWID BOX */
-.hwid-box { background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:10px 14px; margin-bottom:16px; font-family:var(--mono); font-size:11px; color:var(--muted); word-break:break-all; line-height:1.6; }
-.hwid-box span { color:var(--accent); }
+/* ── HWID BOX ── */
+.hwid-box{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px 16px;
+  margin-bottom:20px;
+  display:flex;align-items:center;gap:10px;
+}
+.hwid-icon{font-size:14px;flex-shrink:0;color:var(--cyan)}
+.hwid-info{flex:1;min-width:0}
+.hwid-label{font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:2px;margin-bottom:3px}
+.hwid-val{font-family:var(--mono);font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* STATUS */
-.status { font-size:11px; font-family:var(--mono); color:var(--muted); text-align:center; margin-top:12px; min-height:16px; }
-.status.err { color:var(--red); }
-.status.ok  { color:var(--green); }
+/* ── BUTTON ── */
+.btn{
+  display:block;width:100%;padding:14px;
+  border-radius:10px;border:none;
+  font-family:var(--display);font-size:14px;font-weight:600;
+  letter-spacing:1px;text-transform:uppercase;
+  cursor:pointer;transition:all 0.2s;text-decoration:none;text-align:center;
+}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
+.btn-primary{
+  background:linear-gradient(135deg,var(--cyan),var(--purple));
+  color:#fff;
+  box-shadow:0 4px 24px rgba(0,200,255,0.25),0 4px 24px rgba(123,79,255,0.15);
+}
+.btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,200,255,0.35),0 8px 32px rgba(123,79,255,0.2)}
+.btn-ghost{background:rgba(255,255,255,0.03);color:var(--muted2);border:1px solid var(--border)}
+.btn-ghost:hover:not(:disabled){color:var(--text);border-color:var(--border2)}
+.btn-danger{background:rgba(255,51,85,0.08);color:var(--red);border:1px solid rgba(255,51,85,0.2)}
+.btn-danger:hover:not(:disabled){background:rgba(255,51,85,0.15)}
+.btn-yellow{background:rgba(255,221,0,0.08);color:var(--yellow);border:1px solid rgba(255,221,0,0.2)}
+.btn-yellow:hover:not(:disabled){background:rgba(255,221,0,0.15)}
+.btn-sm{padding:8px 14px;font-size:11px;width:auto;border-radius:8px}
 
-.divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
-.admin-link { text-align:center; margin-top:18px; font-size:11px; font-family:var(--mono); color:var(--muted); }
-.admin-link a { color:var(--muted); text-decoration:none; border-bottom:1px dashed var(--muted); transition:color 0.2s; }
-.admin-link a:hover { color:var(--accent); border-color:var(--accent); }
+/* ── KEY RESULT ── */
+.key-result{
+  display:none;margin-top:20px;
+  background:var(--surface2);
+  border:1px solid rgba(0,255,179,0.25);
+  border-radius:12px;padding:20px;
+  text-align:center;
+  animation:fadeUp 0.4s ease both;
+  position:relative;overflow:hidden;
+}
+.key-result::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent)}
+.key-label{font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:3px;margin-bottom:12px}
+.key-text{
+  font-family:var(--mono);font-size:17px;font-weight:700;
+  color:var(--green);letter-spacing:3px;
+  word-break:break-all;margin-bottom:8px;
+  text-shadow:0 0 20px rgba(0,255,179,0.4);
+}
+.key-expires{font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:16px}
+.btn-copy{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:9px 20px;background:rgba(0,255,179,0.08);
+  border:1px solid rgba(0,255,179,0.25);border-radius:8px;
+  color:var(--green);font-family:var(--mono);font-size:12px;
+  cursor:pointer;transition:all 0.2s;font-weight:500;
+}
+.btn-copy:hover{background:rgba(0,255,179,0.15);transform:translateY(-1px)}
 
-/* DASHBOARD */
-#pageDash .inner { max-width:960px; width:100%; }
-#loginBox { text-align:center; max-width:340px; margin:0 auto; }
-#loginBox h2 { font-size:20px; font-weight:800; color:#fff; margin-bottom:6px; }
-#loginBox p  { font-size:12px; color:var(--muted); font-family:var(--mono); margin-bottom:24px; }
+/* ── STATUS ── */
+.status{font-size:11px;font-family:var(--mono);color:var(--muted2);text-align:center;margin-top:14px;min-height:18px;line-height:1.6}
+.status.err{color:var(--red)}
+.status.ok{color:var(--green)}
 
-/* TABS */
-.tabs { display:flex; gap:4px; margin-bottom:20px; background:var(--card2); padding:4px; border-radius:12px; }
-.tab { flex:1; padding:9px; border:none; border-radius:9px; background:transparent; color:var(--muted); font-family:var(--display); font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; }
-.tab.active { background:var(--accent); color:#fff; }
+/* ── FOOTER LINKS ── */
+.footer-links{
+  display:flex;align-items:center;justify-content:center;gap:20px;
+  margin-top:20px;font-family:var(--mono);font-size:11px;
+}
+.footer-links a{
+  color:var(--muted2);text-decoration:none;
+  display:flex;align-items:center;gap:6px;
+  transition:color 0.2s;border-bottom:1px dashed var(--muted);padding-bottom:1px;
+}
+.footer-links a:hover{color:var(--cyan)}
+.footer-links .sep{color:var(--muted);opacity:0.4}
 
-/* STATS */
-.stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:20px; }
-@media(min-width:600px){ .stats-grid { grid-template-columns:repeat(4,1fr); } }
-.stat-card { background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
-.stat-num { font-size:26px; font-weight:800; font-family:var(--mono); color:var(--accent); }
-.stat-label { font-size:10px; color:var(--muted); margin-top:4px; font-family:var(--mono); }
+/* ════════════════════════════════
+   DASHBOARD
+════════════════════════════════ */
+#pageDash .inner{max-width:980px;width:100%}
+#loginCard{max-width:360px;margin:0 auto}
+.login-logo{text-align:center;margin-bottom:28px}
 
-/* TOOLBAR */
-.toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
-.toolbar .btn { width:auto; padding:9px 14px; font-size:11px; flex-shrink:0; }
-.search-wrap { flex:1; min-width:160px; background:var(--card2); border:1px solid var(--border); border-radius:10px; display:flex; align-items:center; padding:0 12px; gap:8px; }
-.search-wrap input { background:transparent; border:none; outline:none; color:var(--text); font-family:var(--mono); font-size:12px; padding:9px 0; width:100%; }
-.search-wrap input::placeholder { color:var(--muted); }
+/* ── DASH TOPBAR ── */
+.dash-topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:24px;flex-wrap:wrap;gap:12px;
+}
+.dash-title{font-size:24px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fff}
+.dash-title span{color:var(--cyan)}
+.dash-subtitle{font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px}
+.dash-actions{display:flex;gap:8px}
 
-/* FILTER PILLS */
-.filter-pills { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
-.pill { padding:4px 12px; border-radius:20px; font-size:11px; font-family:var(--mono); cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--muted); transition:all 0.15s; }
-.pill.active { background:rgba(96,96,255,0.15); border-color:var(--accent); color:var(--accent); }
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:24px}
+@media(min-width:600px){.stats-grid{grid-template-columns:repeat(4,1fr)}}
+.stat-card{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;padding:18px 16px;text-align:center;
+  position:relative;overflow:hidden;transition:border-color 0.2s;
+}
+.stat-card:hover{border-color:var(--border2)}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--c,var(--cyan));opacity:0.4}
+.stat-num{font-size:28px;font-weight:700;font-family:var(--mono);color:var(--c,var(--cyan))}
+.stat-label{font-size:9px;color:var(--muted2);margin-top:4px;font-family:var(--mono);text-transform:uppercase;letter-spacing:1px}
 
-/* GEN FORM */
-.gen-form { background:rgba(96,96,255,0.06); border:1px solid rgba(96,96,255,0.2); border-radius:12px; padding:16px; margin-bottom:16px; display:none; }
-.gen-form .row { display:flex; gap:8px; flex-wrap:wrap; }
-.gen-form .row .input-wrap { flex:1; min-width:80px; margin-bottom:0; }
-.gen-form .row .btn { width:auto; padding:10px 20px; flex:1; }
-#gen-result { margin-top:10px; font-family:var(--mono); font-size:12px; color:var(--green); line-height:1.9; word-break:break-all; }
+/* ── TABS ── */
+.tabs{display:flex;gap:2px;margin-bottom:20px;background:var(--surface2);padding:4px;border-radius:12px;border:1px solid var(--border)}
+.tab{
+  flex:1;padding:10px 8px;border:none;border-radius:9px;
+  background:transparent;color:var(--muted2);
+  font-family:var(--display);font-size:12px;font-weight:600;
+  cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;
+}
+.tab.active{background:linear-gradient(135deg,rgba(0,200,255,0.15),rgba(123,79,255,0.15));color:#fff;border:1px solid var(--border2)}
 
-/* TABLE */
-.table-wrap { overflow-x:auto; }
-table { width:100%; border-collapse:collapse; font-size:12px; font-family:var(--mono); }
-th { text-align:left; padding:10px 12px; color:var(--muted); border-bottom:1px solid var(--border); font-weight:400; text-transform:uppercase; letter-spacing:1px; font-size:10px; cursor:pointer; white-space:nowrap; user-select:none; }
-th:hover { color:var(--text); }
-th .sort-icon { margin-left:4px; opacity:0.4; }
-th.sorted .sort-icon { opacity:1; color:var(--accent); }
-td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.03); vertical-align:middle; }
-tr:hover td { background:rgba(255,255,255,0.02); }
-.badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; }
-.badge-green { background:rgba(61,255,170,0.1); color:var(--green); border:1px solid rgba(61,255,170,0.2); }
-.badge-red   { background:rgba(255,85,102,0.1); color:var(--red);   border:1px solid rgba(255,85,102,0.2); }
-.badge-muted { background:rgba(255,255,255,0.04); color:var(--muted); border:1px solid var(--border); }
-.act-btn { background:transparent; border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:10px; padding:3px 7px; cursor:pointer; font-family:var(--mono); transition:all 0.15s; margin-right:3px; white-space:nowrap; }
-.act-btn:hover { color:var(--text); border-color:rgba(255,255,255,0.2); }
-.act-btn.del:hover { color:var(--red); border-color:var(--red); }
-.act-btn.extend:hover { color:var(--yellow); border-color:var(--yellow); }
-.no-data { text-align:center; color:var(--muted); padding:32px; font-family:var(--mono); font-size:12px; }
+/* ── TOOLBAR ── */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.toolbar .btn{width:auto}
+.search-wrap{
+  flex:1;min-width:160px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;display:flex;align-items:center;padding:0 12px;gap:8px;
+  transition:border-color 0.2s;
+}
+.search-wrap:focus-within{border-color:var(--border2)}
+.search-wrap input{
+  background:transparent;border:none;outline:none;
+  color:var(--text);font-family:var(--mono);font-size:12px;
+  padding:10px 0;width:100%;
+}
+.search-wrap input::placeholder{color:var(--muted)}
 
-/* EXTEND MODAL */
-.modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; }
-.modal-bg.open { display:flex; }
-.modal { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:28px; width:100%; max-width:340px; animation:fadeUp 0.3s ease both; }
-.modal h3 { font-size:16px; color:#fff; margin-bottom:6px; }
-.modal p  { font-size:11px; color:var(--muted); font-family:var(--mono); margin-bottom:16px; word-break:break-all; }
-.modal-actions { display:flex; gap:8px; margin-top:16px; }
-.modal-actions .btn { flex:1; }
+/* ── FILTER PILLS ── */
+.filter-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.pill{
+  padding:5px 14px;border-radius:20px;border:1px solid var(--border);
+  background:transparent;color:var(--muted2);
+  font-family:var(--mono);font-size:11px;cursor:pointer;transition:all 0.2s;
+}
+.pill.active{background:rgba(0,200,255,0.1);border-color:var(--cyan);color:var(--cyan)}
+.pill:hover:not(.active){border-color:var(--border2);color:var(--text)}
 
-/* LOGS */
-.log-list { display:flex; flex-direction:column; gap:6px; max-height:480px; overflow-y:auto; }
-.log-item { padding:10px 14px; background:var(--card2); border:1px solid var(--border); border-radius:8px; display:flex; gap:12px; align-items:flex-start; }
-.log-ts { font-family:var(--mono); font-size:10px; color:var(--muted); white-space:nowrap; flex-shrink:0; margin-top:2px; }
-.log-action { font-size:11px; font-family:var(--mono); }
-.log-action .tag { display:inline-block; padding:1px 7px; border-radius:4px; font-size:10px; margin-right:6px; }
-.tag-delete  { background:rgba(255,85,102,0.15); color:var(--red); }
-.tag-genkey  { background:rgba(96,96,255,0.15);  color:var(--accent); }
-.tag-extend  { background:rgba(255,204,68,0.15); color:var(--yellow); }
-.tag-resethwid { background:rgba(61,255,170,0.1); color:var(--green); }
-.tag-bulkdelete { background:rgba(255,85,102,0.1); color:var(--red); }
-.tag-default { background:rgba(255,255,255,0.05); color:var(--muted); }
+/* ── GEN FORM ── */
+.gen-form{
+  display:none;background:var(--surface2);
+  border:1px solid var(--border2);border-radius:12px;
+  padding:20px;margin-bottom:16px;
+  animation:fadeUp 0.3s ease both;
+}
+.gen-form.open{display:block}
+.gen-form-title{font-size:13px;color:var(--cyan);margin-bottom:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;font-family:var(--mono)}
+.row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.row .input-wrap{flex:1;min-width:100px;margin-bottom:0}
+.gen-result{margin-top:12px}
 
-/* CHART */
-#chartWrap { margin-bottom:20px; }
-canvas { width:100% !important; }
+/* ── INPUTS ── */
+.input-wrap{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;margin-bottom:10px;
+  transition:border-color 0.2s;
+}
+.input-wrap:focus-within{border-color:var(--border2)}
+.input-wrap input,.input-wrap select{
+  width:100%;padding:11px 14px;
+  background:transparent;border:none;outline:none;
+  color:var(--text);font-family:var(--mono);font-size:12px;
+}
+.input-wrap input::placeholder{color:var(--muted)}
 
-/* DASH STATUS */
-#dash-status { font-size:11px; font-family:var(--mono); text-align:center; min-height:16px; margin-top:12px; }
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:var(--surface2)}
+th{
+  padding:12px 14px;text-align:left;
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  color:var(--muted2);text-transform:uppercase;letter-spacing:1px;
+  border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;
+  transition:color 0.2s;
+}
+th:hover{color:var(--cyan)}
+th.sorted{color:var(--cyan)}
+.sort-icon{font-size:9px;margin-left:4px}
+td{padding:11px 14px;border-bottom:1px solid rgba(0,200,255,0.05);vertical-align:middle}
+tbody tr{transition:background 0.15s}
+tbody tr:hover{background:rgba(0,200,255,0.03)}
+tbody tr:last-child td{border-bottom:none}
 
-/* EMPTY LOG */
-.empty { text-align:center; padding:32px; color:var(--muted); font-family:var(--mono); font-size:12px; }
+/* ── BADGES ── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-family:var(--mono);font-size:10px;font-weight:500}
+.badge-green{background:rgba(0,255,179,0.1);color:var(--green);border:1px solid rgba(0,255,179,0.2)}
+.badge-red{background:rgba(255,51,85,0.1);color:var(--red);border:1px solid rgba(255,51,85,0.2)}
+.badge-muted{background:rgba(255,255,255,0.04);color:var(--muted2);border:1px solid var(--border)}
+
+/* ── ACTION BUTTONS IN TABLE ── */
+.act-btn{
+  padding:4px 10px;border-radius:6px;border:1px solid var(--border);
+  background:transparent;color:var(--muted2);font-family:var(--mono);
+  font-size:10px;cursor:pointer;transition:all 0.15s;margin:1px;
+}
+.act-btn:hover{color:var(--text);border-color:var(--border2)}
+.act-btn.del:hover{color:var(--red);border-color:rgba(255,51,85,0.3)}
+.act-btn.ext:hover{color:var(--yellow);border-color:rgba(255,221,0,0.3)}
+.act-btn.rst:hover{color:var(--cyan);border-color:rgba(0,200,255,0.3)}
+
+/* ── LOGS ── */
+.log-list{display:flex;flex-direction:column;gap:6px}
+.log-item{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:12px 16px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.log-ts{font-family:var(--mono);font-size:10px;color:var(--muted2);white-space:nowrap}
+.log-action{flex:1;font-family:var(--mono);font-size:11px;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tag{padding:2px 10px;border-radius:4px;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px}
+.tag-delete{background:rgba(255,51,85,0.15);color:var(--red)}
+.tag-genkey{background:rgba(0,255,179,0.12);color:var(--green)}
+.tag-extend{background:rgba(255,221,0,0.12);color:var(--yellow)}
+.tag-resethwid{background:rgba(0,200,255,0.12);color:var(--cyan)}
+.tag-bulkdelete{background:rgba(255,51,85,0.1);color:var(--red)}
+.tag-saveconfig{background:rgba(123,79,255,0.12);color:var(--purple)}
+.tag-default{background:rgba(255,255,255,0.05);color:var(--muted2)}
+
+/* ── CHART ── */
+#chartWrap{margin-bottom:20px}
+canvas{width:100%!important}
+
+/* ── SETTINGS ── */
+.setting-block{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;padding:20px;margin-bottom:14px;
+  transition:border-color 0.2s;
+}
+.setting-block:hover{border-color:var(--border2)}
+.setting-title{font-family:var(--mono);font-size:11px;color:var(--cyan);font-weight:600;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}
+.setting-desc{font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:14px;line-height:1.7}
+.setting-note{
+  background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.12);
+  border-radius:10px;padding:14px;margin-bottom:16px;
+  font-family:var(--mono);font-size:10px;color:var(--muted2);line-height:2;
+}
+.setting-note span{color:var(--cyan)}
+
+/* ── MODAL ── */
+.modal-bg{
+  position:fixed;inset:0;z-index:999;
+  background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:16px;padding:28px;width:100%;max-width:360px;
+  animation:fadeUp 0.3s ease both;position:relative;overflow:hidden;
+}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
+.modal h3{font-size:16px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;margin-bottom:6px}
+.modal p{font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:18px}
+.modal-actions{display:flex;gap:8px;margin-top:18px}
+.modal-actions .btn{flex:1}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:40px;color:var(--muted2);font-family:var(--mono);font-size:12px}
+.empty-icon{font-size:32px;margin-bottom:12px;opacity:0.4}
+
+/* ── TABLE INFO ── */
+.table-info{font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:10px;text-align:right}
+
+/* ── DASH STATUS ── */
+#dash-status{font-family:var(--mono);font-size:11px;text-align:center;min-height:18px;margin-top:12px}
+
+/* ── DISCORD BANNER ── */
+.discord-banner{
+  margin-top:20px;
+  background:var(--surface);border:1px solid rgba(88,101,242,0.3);
+  border-radius:12px;padding:14px 18px;
+  display:flex;align-items:center;gap:12px;
+  text-decoration:none;transition:all 0.2s;
+  animation:fadeUp 0.5s ease 0.2s both;
+}
+.discord-banner:hover{border-color:rgba(88,101,242,0.6);background:rgba(88,101,242,0.06);transform:translateY(-1px)}
+.discord-icon{font-size:22px;flex-shrink:0}
+.discord-text{flex:1}
+.discord-name{font-size:13px;font-weight:600;color:#fff;letter-spacing:0.5px}
+.discord-sub{font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:2px}
+.discord-arrow{color:var(--muted2);font-size:16px;transition:transform 0.2s}
+.discord-banner:hover .discord-arrow{transform:translateX(4px);color:#5865f2}
 </style>
 </head>
 <body>
 
-<!-- ══════════ PAGE: GET KEY ══════════ -->
+<div class="bg-wrap">
+  <div class="bg-grid"></div>
+  <div class="bg-orb1"></div>
+  <div class="bg-orb2"></div>
+  <div class="bg-scan"></div>
+</div>
+
+<!-- ══════════════════════════════
+     PAGE: GET KEY
+══════════════════════════════ -->
 <div class="page" id="pageGetkey">
-  <div style="width:100%;max-width:440px;position:relative;z-index:1">
-    <div class="card">
-      <div class="header">
-        <div class="logo-ring"><img src="https://i.ibb.co.com/r2tHTs6k/file-00000000dac8720bac552ad433c9637d.jpg" alt="logo"></div>
-        <h1>Vertic<span>Hub</span></h1>
-        <p>// dapatkan key gratis kamu</p>
+  <div class="getkey-wrap">
+
+    <!-- Logo -->
+    <div class="vh-logo">
+      <div class="logo-avatar">
+        <img src="https://i.ibb.co.com/r2tHTs6k/file-00000000dac8720bac552ad433c9637d.jpg" alt="VertictHub">
       </div>
-      <div class="hwid-box">HWID: <span id="hwidDisplay">Mendeteksi...</span></div>
-      <button class="btn btn-primary" id="btnGetKey" onclick="doGetKey()">⚡ Ambil Key Sekarang</button>
+      <div class="vh-name"><span class="v">Vertic</span><span class="h">Hub</span></div>
+      <div class="vh-tagline">// FREE KEY SYSTEM — ROBLOX EXECUTOR</div>
+    </div>
+
+    <!-- Card -->
+    <div class="card">
+      <!-- HWID -->
+      <div class="hwid-box">
+        <div class="hwid-icon">🔑</div>
+        <div class="hwid-info">
+          <div class="hwid-label">Device ID</div>
+          <div class="hwid-val" id="hwidDisplay">Mendeteksi...</div>
+        </div>
+      </div>
+
+      <!-- Button -->
+      <button class="btn btn-primary" id="btnGetKey" onclick="doGetKey()">
+        ⚡ Ambil Key Gratis
+      </button>
+
+      <!-- Result -->
       <div id="keyResult" class="key-result">
-        <div class="key-label">— Key Aktif —</div>
+        <div class="key-label">— Key Aktif Kamu —</div>
         <div id="keyText" class="key-text"></div>
         <div id="keyExpires" class="key-expires"></div>
-        <button class="btn-copy" id="copyBtn" onclick="copyKey()"><span>📋</span> Salin Key</button>
+        <button class="btn-copy" id="copyBtn" onclick="copyKey()">
+          <span>📋</span> Salin Key
+        </button>
       </div>
+
       <div id="gk-status" class="status"></div>
     </div>
-    <div class="admin-link"><a href="/dashboard">🔐 Login Admin</a></div>
+
+    <!-- Footer links -->
+    <div class="footer-links">
+      <a href="https://discord.gg/fVVZWMwmKG" target="_blank">
+        <span>🎮</span> Discord
+      </a>
+      <span class="sep">|</span>
+      <a href="/dashboard">
+        <span>⚙️</span> Admin
+      </a>
+    </div>
+
+    <!-- Discord Banner -->
+    <a class="discord-banner" href="https://discord.gg/fVVZWMwmKG" target="_blank">
+      <div class="discord-icon">💬</div>
+      <div class="discord-text">
+        <div class="discord-name">VertictHub Community</div>
+        <div class="discord-sub">discord.gg/fVVZWMwmKG — join sekarang</div>
+      </div>
+      <div class="discord-arrow">→</div>
+    </a>
+
   </div>
 </div>
 
-<!-- ══════════ PAGE: DASHBOARD ══════════ -->
+<!-- ══════════════════════════════
+     PAGE: DASHBOARD
+══════════════════════════════ -->
 <div class="page" id="pageDash">
   <div class="inner">
+
     <!-- LOGIN -->
     <div class="card" id="loginCard">
-      <div id="loginBox">
-        <div class="logo-ring" style="margin-bottom:20px"><img src="https://i.ibb.co.com/r2tHTs6k/file-00000000dac8720bac552ad433c9637d.jpg" alt="logo"></div>
-        <h2>Admin Dashboard</h2>
-        <p>// vertichub key system</p>
+      <div id="loginBox" style="text-align:center;max-width:340px;margin:0 auto">
+        <div class="login-logo">
+          <div class="logo-avatar" style="width:64px;height:64px;margin-bottom:16px">
+            <img src="https://i.ibb.co.com/r2tHTs6k/file-00000000dac8720bac552ad433c9637d.jpg" alt="VertictHub">
+          </div>
+          <div style="font-size:20px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fff">Admin <span style="color:var(--cyan)">Dashboard</span></div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:4px;letter-spacing:1px">// VERTICHUB KEY SYSTEM</div>
+        </div>
         <div class="input-wrap">
           <input type="password" id="secretInput" placeholder="Masukkan admin secret..."
             onkeydown="if(event.key==='Enter')doLogin()">
         </div>
         <button class="btn btn-primary" onclick="doLogin()">🔐 Login</button>
         <div id="login-status" class="status"></div>
-        <div style="margin-top:16px"><a href="/" style="font-size:11px;font-family:var(--mono);color:var(--muted);text-decoration:none;border-bottom:1px dashed var(--muted)">← Kembali</a></div>
+        <div style="margin-top:20px">
+          <a href="/" style="font-family:var(--mono);font-size:11px;color:var(--muted2);text-decoration:none;border-bottom:1px dashed var(--muted);padding-bottom:1px">← Kembali ke Get Key</a>
+        </div>
       </div>
     </div>
 
-    <!-- DASHBOARD MAIN -->
+    <!-- DASH MAIN -->
     <div id="dashMain" style="display:none">
       <div class="card">
         <!-- Topbar -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+        <div class="dash-topbar">
           <div>
-            <div style="font-size:18px;font-weight:800;color:#fff">Dashboard</div>
-            <div style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="lastUpdate">// memuat...</div>
+            <div class="dash-title">Dash<span>board</span></div>
+            <div class="dash-subtitle" id="lastUpdate">// memuat data...</div>
           </div>
-          <div style="display:flex;gap:8px">
-            <a href="/" style="display:inline-block;padding:8px 14px;font-size:11px;border:1px solid var(--border);border-radius:10px;color:var(--muted);text-decoration:none;font-family:var(--mono)">← Get Key</a>
-            <button class="btn btn-ghost" style="width:auto;padding:8px 14px;font-size:11px" onclick="doLogout()">Logout</button>
+          <div class="dash-actions">
+            <a href="/" class="btn btn-ghost btn-sm">← Get Key</a>
+            <button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button>
           </div>
         </div>
 
         <!-- Stats -->
         <div class="stats-grid">
-          <div class="stat-card"><div class="stat-num" id="st-total">-</div><div class="stat-label">Total Key</div></div>
-          <div class="stat-card"><div class="stat-num" id="st-active" style="color:var(--green)">-</div><div class="stat-label">Aktif</div></div>
-          <div class="stat-card"><div class="stat-num" id="st-expired" style="color:var(--red)">-</div><div class="stat-label">Expired</div></div>
-          <div class="stat-card"><div class="stat-num" id="st-bound" style="color:var(--yellow)">-</div><div class="stat-label">Terhubung</div></div>
+          <div class="stat-card" style="--c:var(--cyan)">
+            <div class="stat-num" id="st-total">-</div>
+            <div class="stat-label">Total Key</div>
+          </div>
+          <div class="stat-card" style="--c:var(--green)">
+            <div class="stat-num" id="st-active">-</div>
+            <div class="stat-label">Aktif</div>
+          </div>
+          <div class="stat-card" style="--c:var(--red)">
+            <div class="stat-num" id="st-expired">-</div>
+            <div class="stat-label">Expired</div>
+          </div>
+          <div class="stat-card" style="--c:var(--yellow)">
+            <div class="stat-num" id="st-bound">-</div>
+            <div class="stat-label">Terhubung</div>
+          </div>
         </div>
 
         <!-- Tabs -->
@@ -239,20 +550,18 @@ canvas { width:100% !important; }
           <button class="tab" onclick="switchTab('settings')">⚙️ Pengaturan</button>
         </div>
 
-        <!-- ── TAB: KEYS ── -->
+        <!-- ── TAB KEYS ── -->
         <div id="tab-keys">
-          <!-- Toolbar -->
           <div class="toolbar">
             <div class="search-wrap">
-              <span style="color:var(--muted);font-size:13px">🔍</span>
-              <input type="text" id="searchInput" placeholder="Cari key atau HWID..." oninput="renderTable()">
+              <span style="color:var(--muted2);font-size:12px">🔍</span>
+              <input type="text" id="searchInput" placeholder="Cari key, username, HWID..." oninput="renderTable()">
             </div>
-            <button class="btn btn-primary" onclick="toggleGenForm()">➕ Generate</button>
-            <button class="btn btn-danger" onclick="doBulkDelete()">🗑 Hapus Expired</button>
-            <button class="btn btn-ghost" onclick="loadKeys()">🔄</button>
+            <button class="btn btn-primary btn-sm" onclick="toggleGenForm()">➕ Generate</button>
+            <button class="btn btn-danger btn-sm" onclick="doBulkDelete()">🗑 Expired</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadKeys()" title="Refresh">↺</button>
           </div>
 
-          <!-- Filter pills -->
           <div class="filter-pills">
             <button class="pill active" onclick="setFilter('all',this)">Semua</button>
             <button class="pill" onclick="setFilter('active',this)">Aktif</button>
@@ -261,18 +570,16 @@ canvas { width:100% !important; }
             <button class="pill" onclick="setFilter('free',this)">Bebas</button>
           </div>
 
-          <!-- Gen form -->
           <div class="gen-form" id="genForm">
-            <div style="font-size:13px;color:var(--text);margin-bottom:12px;font-weight:600">⚡ Generate Key Baru</div>
+            <div class="gen-form-title">⚡ Generate Key Baru</div>
             <div class="row">
               <div class="input-wrap"><input type="number" id="genCount" placeholder="Jumlah" value="1" min="1" max="50"></div>
-              <div class="input-wrap"><input type="number" id="genDays" placeholder="Hari berlaku" value="1" min="1" max="30"></div>
-              <button class="btn btn-primary" onclick="doGenKey()">Generate</button>
+              <div class="input-wrap"><input type="number" id="genDays" placeholder="Hari berlaku" value="1" min="1" max="365"></div>
+              <button class="btn btn-primary btn-sm" onclick="doGenKey()" style="margin-bottom:10px">Generate</button>
             </div>
             <div id="gen-result"></div>
           </div>
 
-          <!-- Table -->
           <div class="table-wrap">
             <table>
               <thead>
@@ -289,75 +596,75 @@ canvas { width:100% !important; }
               <tbody id="keyTableBody"></tbody>
             </table>
           </div>
-          <div id="tableInfo" style="font-size:10px;font-family:var(--mono);color:var(--muted);margin-top:8px;text-align:right"></div>
+          <div class="table-info" id="tableInfo"></div>
         </div>
 
-        <!-- ── TAB: LOGS ── -->
+        <!-- ── TAB LOGS ── -->
         <div id="tab-logs" style="display:none">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">Log Aktivitas Terbaru</div>
-            <button class="btn btn-ghost" style="width:auto;padding:7px 12px;font-size:11px" onclick="loadLogs()">🔄 Refresh</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);text-transform:uppercase;letter-spacing:2px">Log Aktivitas</div>
+            <button class="btn btn-ghost btn-sm" onclick="loadLogs()">↺ Refresh</button>
           </div>
           <div id="logList" class="log-list"></div>
         </div>
 
-        <!-- ── TAB: CHART ── -->
+        <!-- ── TAB CHART ── -->
         <div id="tab-chart" style="display:none">
-          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px">📊 Key Dibuat per Hari (7 hari terakhir)</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);text-transform:uppercase;letter-spacing:2px;margin-bottom:20px">📊 Key Dibuat 7 Hari Terakhir</div>
           <div id="chartWrap">
             <canvas id="myChart" height="200"></canvas>
           </div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px">
-            <div class="stat-card"><div class="stat-num" id="ch-today" style="font-size:20px">-</div><div class="stat-label">Hari Ini</div></div>
-            <div class="stat-card"><div class="stat-num" id="ch-week" style="font-size:20px">-</div><div class="stat-label">7 Hari</div></div>
-            <div class="stat-card"><div class="stat-num" id="ch-active-pct" style="font-size:20px;color:var(--green)">-%</div><div class="stat-label">% Aktif</div></div>
+            <div class="stat-card" style="--c:var(--cyan)"><div class="stat-num" id="ch-today" style="font-size:22px">-</div><div class="stat-label">Hari Ini</div></div>
+            <div class="stat-card" style="--c:var(--purple)"><div class="stat-num" id="ch-week" style="font-size:22px">-</div><div class="stat-label">7 Hari</div></div>
+            <div class="stat-card" style="--c:var(--green)"><div class="stat-num" id="ch-active-pct" style="font-size:22px">-%</div><div class="stat-label">% Aktif</div></div>
           </div>
         </div>
 
-        <!-- ── TAB: SETTINGS ── -->
+        <!-- ── TAB SETTINGS ── -->
         <div id="tab-settings" style="display:none">
-          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:20px">⚙️ Pengaturan Get Key</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--cyan);text-transform:uppercase;letter-spacing:2px;margin-bottom:20px">⚙️ Pengaturan Sistem</div>
 
-          <div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px">
-            <div style="font-size:12px;color:var(--text);font-weight:600;margin-bottom:6px">🔢 Max Key Per Hari</div>
-            <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:12px">Berapa key baru yang bisa dibuat dalam 1 hari. Set 0 = unlimited.</div>
-            <div style="display:flex;gap:8px">
-              <div class="input-wrap" style="flex:1;margin-bottom:0"><input type="number" id="cfgMaxPerDay" placeholder="0 = unlimited" min="0"></div>
-            </div>
+          <div class="setting-block">
+            <div class="setting-title">Max Key Per Hari</div>
+            <div class="setting-desc">Berapa key baru yang bisa dibuat per hari oleh semua user.<br>Set 0 untuk unlimited.</div>
+            <div class="input-wrap" style="margin-bottom:0"><input type="number" id="cfgMaxPerDay" placeholder="0 = unlimited" min="0"></div>
           </div>
 
-          <div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px">
-            <div style="font-size:12px;color:var(--text);font-weight:600;margin-bottom:6px">📦 Max Total Key Aktif</div>
-            <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:12px">Jumlah maksimal key aktif secara keseluruhan. Set 0 = unlimited.</div>
-            <div style="display:flex;gap:8px">
-              <div class="input-wrap" style="flex:1;margin-bottom:0"><input type="number" id="cfgMaxTotal" placeholder="0 = unlimited" min="0"></div>
-            </div>
+          <div class="setting-block">
+            <div class="setting-title">Max Total Key Aktif</div>
+            <div class="setting-desc">Jumlah maksimal key aktif secara keseluruhan.<br>Set 0 untuk unlimited.</div>
+            <div class="input-wrap" style="margin-bottom:0"><input type="number" id="cfgMaxTotal" placeholder="0 = unlimited" min="0"></div>
           </div>
 
-          <div style="background:rgba(96,96,255,0.06);border:1px solid rgba(96,96,255,0.2);border-radius:12px;padding:14px;margin-bottom:16px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.8">
-            💡 Contoh: maxPerDay=<span style="color:var(--accent)">17</span>, maxTotal=<span style="color:var(--accent)">100</span><br>
-            → Setiap hari max 17 key baru bisa dibuat<br>
-            → Kalau total key aktif sudah 100, tidak bisa tambah lagi
+          <div class="setting-note">
+            💡 Contoh: maxPerDay=<span>17</span>, maxTotal=<span>100</span><br>
+            → Setiap hari max <span>17</span> key baru bisa dibuat<br>
+            → Kalau total key aktif sudah <span>100</span>, tidak bisa tambah lagi
           </div>
 
           <button class="btn btn-primary" onclick="doSaveConfig()">💾 Simpan Pengaturan</button>
-          <div id="cfg-status" class="status" style="margin-top:10px"></div>
+          <div id="cfg-status" class="status"></div>
         </div>
+
         <div id="dash-status"></div>
       </div>
     </div>
+
   </div>
 </div>
 
-<!-- ══════════ EXTEND MODAL ══════════ -->
+<!-- ── EXTEND MODAL ── -->
 <div class="modal-bg" id="extendModal">
   <div class="modal">
     <h3>⏳ Perpanjang Key</h3>
     <p id="extendKeyLabel">VH-...</p>
     <div class="input-wrap">
-      <input type="number" id="extendDays" placeholder="Jumlah hari tambahan" value="1" min="1" max="30">
+      <input type="number" id="extendDays" placeholder="Jumlah hari tambahan" value="1" min="1" max="365">
     </div>
-    <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">Expire saat ini: <span id="extendCurrentExpiry" style="color:var(--text)">-</span></div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">
+      Expire saat ini: <span id="extendCurrentExpiry" style="color:var(--cyan)">-</span>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeExtendModal()">Batal</button>
       <button class="btn btn-yellow" onclick="doExtend()">Perpanjang</button>
@@ -371,11 +678,10 @@ let _secret = '';
 let _allKeys = [];
 let _filter  = 'all';
 let _sortCol = 'createdAt';
-let _sortDir = -1; // -1 = desc, 1 = asc
+let _sortDir = -1;
 let _extendKey = '';
-let _chartInstance = null;
 
-// ── ROUTER ─────────────────────────────────
+// ── ROUTER ──
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -387,31 +693,28 @@ if (location.pathname === '/dashboard') {
   initGetKey();
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════
 // GET KEY
-// ══════════════════════════════════════════
+// ══════════════════════════════
 function initGetKey() {
   const params = new URLSearchParams(location.search);
-  const d      = params.get('d');
-  const s      = params.get('s');
-
-  const params2 = new URLSearchParams(location.search);
-  if (params2.get('expired')) {
-    setGkStatus('⚠️ Link expired, minta link baru dari script Roblox', false);
+  const d = params.get('d');
+  const s = params.get('s');
+  if (params.get('expired')) {
+    setGkStatus('⚠️ Link expired, minta link baru dari script Roblox', 'err');
   }
   if (d && s) {
-    // Ada signed token → simpan untuk dikirim ke API
     window._tokenD = d;
     window._tokenS = s;
     document.getElementById('hwidDisplay').textContent = '🔒 HWID Terenkripsi';
   } else {
-    // Fallback browser HWID (kalau buka manual tanpa token)
     window._browserHwid = genBrowserHwid();
     window._tokenD = null;
     window._tokenS = null;
     document.getElementById('hwidDisplay').textContent = window._browserHwid.substring(0,20) + '...';
   }
 }
+
 function genBrowserHwid() {
   let id = null;
   try { id = localStorage.getItem('vh_hwid'); } catch(e){}
@@ -422,25 +725,25 @@ function genBrowserHwid() {
   }
   return id;
 }
+
 function setGkStatus(msg, type='') {
   const s = document.getElementById('gk-status');
   s.textContent = msg; s.className = 'status ' + type;
 }
+
 async function doGetKey() {
   const btn = document.getElementById('btnGetKey');
   btn.disabled = true; btn.textContent = '⏳ Memproses...';
-  setGkStatus('Mengambil key...');
+  setGkStatus('Mengambil key...', '');
   try {
     let url;
     if (window._tokenD && window._tokenS) {
-      // Pakai signed token dari Lua
       url = `${API}/api/getkey?d=${encodeURIComponent(window._tokenD)}&s=${encodeURIComponent(window._tokenS)}`;
     } else {
-      // Fallback pakai browser HWID
       const hwid = genBrowserHwid();
       url = `${API}/api/getkey?hwid=${encodeURIComponent(hwid)}`;
     }
-    const res = await fetch(url, { headers: { "Accept": "application/json" } });
+    const res  = await fetch(url, { headers: { "Accept": "application/json" } });
     const data = await res.json();
     if (data.key) {
       document.getElementById('keyText').textContent = data.key;
@@ -450,14 +753,15 @@ async function doGetKey() {
       btn.style.display = 'none';
       setGkStatus(data.reused ? '✓ Key kamu masih aktif' : '✓ Key baru berhasil dibuat!', 'ok');
     } else {
-      setGkStatus(data.error || 'Gagal ambil key', 'err');
-      btn.disabled = false; btn.textContent = '⚡ Ambil Key Sekarang';
+      setGkStatus('❌ ' + (data.error || 'Gagal ambil key'), 'err');
+      btn.disabled = false; btn.textContent = '⚡ Ambil Key Gratis';
     }
   } catch(e) {
-    setGkStatus('Koneksi error, coba lagi', 'err');
-    btn.disabled = false; btn.textContent = '⚡ Ambil Key Sekarang';
+    setGkStatus('❌ Koneksi error, coba lagi', 'err');
+    btn.disabled = false; btn.textContent = '⚡ Ambil Key Gratis';
   }
 }
+
 function copyKey() {
   navigator.clipboard.writeText(document.getElementById('keyText').textContent).then(() => {
     const btn = document.getElementById('copyBtn');
@@ -466,14 +770,14 @@ function copyKey() {
   });
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════
 // DASHBOARD
-// ══════════════════════════════════════════
+// ══════════════════════════════
 function setDashStatus(msg, type='', dur=3000) {
   const s = document.getElementById('dash-status');
   if (!s) return;
-  s.textContent = msg; s.className = 'status ' + type;
-  if (dur) setTimeout(() => { s.textContent = ''; s.className = 'status'; }, dur);
+  s.textContent = msg; s.style.color = type === 'ok' ? 'var(--green)' : type === 'err' ? 'var(--red)' : 'var(--muted2)';
+  if (dur) setTimeout(() => { s.textContent = ''; }, dur);
 }
 
 async function doLogin() {
@@ -489,6 +793,7 @@ async function doLogin() {
       document.getElementById('loginCard').style.display = 'none';
       document.getElementById('dashMain').style.display = 'block';
       _allKeys = data.keys || [];
+      if (data.config) window._config = data.config;
       renderStats(data.stats);
       renderTable();
       buildChart();
@@ -499,6 +804,7 @@ async function doLogin() {
     s.textContent = '❌ Koneksi error'; s.className = 'status err';
   }
 }
+
 function doLogout() {
   _secret = ''; _allKeys = [];
   document.getElementById('loginCard').style.display = 'block';
@@ -516,13 +822,11 @@ async function loadKeys() {
     renderStats(data.stats);
     renderTable();
     buildChart();
-    const now = new Date();
-    document.getElementById('lastUpdate').textContent = `// diperbarui ${now.toLocaleTimeString('id-ID')}`;
+    document.getElementById('lastUpdate').textContent = `// diperbarui ${new Date().toLocaleTimeString('id-ID')}`;
     setDashStatus('✓ Data diperbarui', 'ok');
   } catch(e) { setDashStatus('❌ Gagal refresh', 'err'); }
 }
 
-// ── TABS ──
 function switchTab(name) {
   ['keys','logs','chart','settings'].forEach(t => {
     document.getElementById('tab-'+t).style.display = t === name ? 'block' : 'none';
@@ -530,12 +834,11 @@ function switchTab(name) {
   document.querySelectorAll('.tab').forEach((el,i) => {
     el.classList.toggle('active', ['keys','logs','chart','settings'][i] === name);
   });
-  if (name === 'logs') loadLogs();
-  if (name === 'chart') buildChart();
+  if (name === 'logs')     loadLogs();
+  if (name === 'chart')    buildChart();
   if (name === 'settings') loadConfig();
 }
 
-// ── STATS ──
 function renderStats(s) {
   document.getElementById('st-total').textContent   = s.total;
   document.getElementById('st-active').textContent  = s.active;
@@ -543,7 +846,6 @@ function renderStats(s) {
   document.getElementById('st-bound').textContent   = s.bound;
 }
 
-// ── FILTER ──
 function setFilter(f, el) {
   _filter = f;
   document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
@@ -551,7 +853,6 @@ function setFilter(f, el) {
   renderTable();
 }
 
-// ── SORT ──
 function sortBy(col) {
   if (_sortCol === col) _sortDir *= -1;
   else { _sortCol = col; _sortDir = col === 'createdAt' || col === 'expires' ? -1 : 1; }
@@ -563,96 +864,97 @@ function sortBy(col) {
   renderTable();
 }
 
-// ── RENDER TABLE ──
 function renderTable() {
-  const q    = (document.getElementById('searchInput').value || '').toLowerCase();
-  let rows   = _allKeys.filter(k => {
+  const q   = (document.getElementById('searchInput').value || '').toLowerCase();
+  let rows  = _allKeys.filter(k => {
     if (_filter === 'active'  && k.expired)  return false;
     if (_filter === 'expired' && !k.expired) return false;
     if (_filter === 'bound'   && !k.hwid)    return false;
     if (_filter === 'free'    && k.hwid)     return false;
-    if (q) return k.key.toLowerCase().includes(q) || (k.hwid || '').toLowerCase().includes(q);
+    if (q) return k.key.toLowerCase().includes(q)
+      || (k.hwid||'').toLowerCase().includes(q)
+      || (k.username||'').toLowerCase().includes(q);
     return true;
   });
-
-  // Sort
-  rows.sort((a, b) => {
-    let va = a[_sortCol] || '', vb = b[_sortCol] || '';
-    if (typeof va === 'boolean') va = va ? 1 : 0, vb = vb ? 1 : 0;
-    return va < vb ? -_sortDir : va > vb ? _sortDir : 0;
+  rows.sort((a,b) => {
+    let va = a[_sortCol]||'', vb = b[_sortCol]||'';
+    if (typeof va==='boolean') {va=va?1:0; vb=vb?1:0;}
+    return va<vb?-_sortDir:va>vb?_sortDir:0;
   });
-
   const tbody = document.getElementById('keyTableBody');
   document.getElementById('tableInfo').textContent = `Menampilkan ${rows.length} dari ${_allKeys.length} key`;
-
-  if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="no-data">Tidak ada key yang cocok</td></tr>`;
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">🔍</div>Tidak ada key ditemukan</div></td></tr>`;
     return;
   }
-
   tbody.innerHTML = rows.map(k => {
-    const expDate = k.expires ? k.expires.substring(0,10) : '-';
-    const created = k.createdAt ? k.createdAt.substring(0,10) : '-';
-    const hwidShort = k.hwid ? k.hwid.substring(0,14)+'…' : '';
-    const uname = k.username ? `<span style="color:var(--text)">${k.username}</span>` : '<span class="badge badge-muted">-</span>';
+    const hwidShort = k.hwid ? k.hwid.substring(0,16)+'…' : '';
+    const expDate   = k.expires ? k.expires.substring(0,10) : '-';
+    const creDate   = k.createdAt ? k.createdAt.substring(0,10) : '-';
+    const uname     = k.username
+      ? `<span style="color:var(--text);font-family:var(--mono);font-size:11px">${k.username}</span>`
+      : `<span class="badge badge-muted">-</span>`;
     return `<tr>
-      <td style="color:var(--green);cursor:pointer" onclick="navigator.clipboard.writeText('${k.key}')" title="Klik untuk salin">${k.key}</td>
-      <td><span class="badge ${k.expired ? 'badge-red':'badge-green'}">${k.expired?'Expired':'Aktif'}</span></td>
-      <td style="font-size:11px">${uname}</td>
-      <td style="color:var(--muted);font-size:10px">${k.hwid ? `<span title="${k.hwid}">${hwidShort}</span>` : '<span class="badge badge-muted">Bebas</span>'}</td>
-      <td style="color:var(--muted)">${expDate}</td>
-      <td style="color:var(--muted)">${created}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--cyan);cursor:pointer"
+          onclick="navigator.clipboard.writeText('${k.key}')" title="Klik untuk salin">${k.key}</td>
+      <td><span class="badge ${k.expired?'badge-red':'badge-green'}">${k.expired?'Expired':'Aktif'}</span></td>
+      <td>${uname}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--muted2)" title="${k.hwid||''}">${k.hwid?hwidShort:'<span class="badge badge-muted">Bebas</span>'}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:${k.expired?'var(--red)':'var(--text)'}">${expDate}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted2)">${creDate}</td>
       <td style="white-space:nowrap">
-        <button class="act-btn extend" onclick="openExtendModal('${k.key}','${k.expires}')">+Hari</button>
-        ${k.hwid ? `<button class="act-btn" onclick="doResetHwid('${k.key}')">Reset</button>` : ''}
+        <button class="act-btn ext" onclick="openExtendModal('${k.key}','${k.expires||''}')">+Hari</button>
+        <button class="act-btn rst" onclick="doResetHwid('${k.key}')">Reset</button>
         <button class="act-btn del" onclick="doDeleteKey('${k.key}')">Hapus</button>
       </td>
     </tr>`;
   }).join('');
 }
 
-// ── GEN FORM ──
 function toggleGenForm() {
-  const f = document.getElementById('genForm');
-  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  document.getElementById('genForm').classList.toggle('open');
 }
 
 async function doGenKey() {
-  const count = parseInt(document.getElementById('genCount').value) || 1;
-  const days  = parseInt(document.getElementById('genDays').value)  || 1;
-  document.getElementById('gen-result').textContent = '⏳ Generating...';
+  const count      = parseInt(document.getElementById('genCount').value)||1;
+  const expireDays = parseInt(document.getElementById('genDays').value)||1;
+  const el = document.getElementById('gen-result');
+  el.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--muted2)">⏳ Generating...</div>';
   try {
     const res  = await fetch(`${API}/api/dashboard`, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ secret:_secret, action:'genkey', count, expireDays:days })
+      body: JSON.stringify({ secret:_secret, action:'genkey', count, expireDays })
     });
     const data = await res.json();
-    if (data.keys) {
-      document.getElementById('gen-result').innerHTML = `✓ ${data.keys.length} key dibuat (${days} hari):<br>` + data.keys.join('<br>');
+    if (data.success) {
+      el.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--green);margin-top:8px">
+        ✓ ${data.keys.length} key dibuat (${expireDays} hari)<br>
+        ${data.keys.map(k=>`<span style="color:var(--cyan);cursor:pointer" onclick="navigator.clipboard.writeText('${k}')" title="Klik salin">${k}</span>`).join('<br>')}
+      </div>`;
       loadKeys();
     } else {
-      document.getElementById('gen-result').textContent = '❌ ' + (data.error || 'Gagal');
+      el.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--red)">❌ ${data.error||'Gagal'}</div>`;
     }
-  } catch(e) { document.getElementById('gen-result').textContent = '❌ Koneksi error'; }
+  } catch(e) {
+    el.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--red)">❌ Koneksi error</div>`;
+  }
 }
 
-// ── BULK DELETE ──
 async function doBulkDelete() {
-  const expiredCount = _allKeys.filter(k => k.expired).length;
-  if (expiredCount === 0) { setDashStatus('Tidak ada key expired', ''); return; }
-  if (!confirm(`Hapus semua ${expiredCount} key expired?`)) return;
+  const n = _allKeys.filter(k=>k.expired).length;
+  if (!n) { setDashStatus('Tidak ada key expired',''); return; }
+  if (!confirm(`Hapus semua ${n} key expired?`)) return;
   try {
     const res  = await fetch(`${API}/api/dashboard`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ secret:_secret, action:'bulkdelete' })
     });
     const data = await res.json();
-    if (data.success) { setDashStatus(`✓ ${data.deleted} key expired dihapus`, 'ok'); loadKeys(); }
-    else setDashStatus('❌ ' + (data.error||'Gagal'), 'err');
-  } catch(e) { setDashStatus('❌ Koneksi error', 'err'); }
+    if (data.success) { setDashStatus(`✓ ${data.deleted} key dihapus`, 'ok'); loadKeys(); }
+    else setDashStatus('❌ '+(data.error||'Gagal'), 'err');
+  } catch(e) { setDashStatus('❌ Koneksi error','err'); }
 }
 
-// ── DELETE ──
 async function doDeleteKey(key) {
   if (!confirm(`Hapus key ${key}?`)) return;
   try {
@@ -661,12 +963,11 @@ async function doDeleteKey(key) {
       body: JSON.stringify({ secret:_secret, action:'delete', key })
     });
     const data = await res.json();
-    if (data.success) { setDashStatus('✓ Key dihapus', 'ok'); loadKeys(); }
-    else setDashStatus('❌ ' + (data.error||'Gagal'), 'err');
-  } catch(e) { setDashStatus('❌ Koneksi error', 'err'); }
+    if (data.success) { setDashStatus('✓ Key dihapus','ok'); loadKeys(); }
+    else setDashStatus('❌ '+(data.error||'Gagal'),'err');
+  } catch(e) { setDashStatus('❌ Koneksi error','err'); }
 }
 
-// ── RESET HWID ──
 async function doResetHwid(key) {
   try {
     const res  = await fetch(`${API}/api/dashboard`, {
@@ -674,12 +975,11 @@ async function doResetHwid(key) {
       body: JSON.stringify({ secret:_secret, action:'resethwid', key })
     });
     const data = await res.json();
-    if (data.success) { setDashStatus('✓ HWID direset', 'ok'); loadKeys(); }
-    else setDashStatus('❌ ' + (data.error||'Gagal'), 'err');
-  } catch(e) { setDashStatus('❌ Koneksi error', 'err'); }
+    if (data.success) { setDashStatus('✓ HWID direset','ok'); loadKeys(); }
+    else setDashStatus('❌ '+(data.error||'Gagal'),'err');
+  } catch(e) { setDashStatus('❌ Koneksi error','err'); }
 }
 
-// ── EXTEND MODAL ──
 function openExtendModal(key, expires) {
   _extendKey = key;
   document.getElementById('extendKeyLabel').textContent = key;
@@ -691,7 +991,7 @@ function closeExtendModal() {
   document.getElementById('extendModal').classList.remove('open');
 }
 async function doExtend() {
-  const days = parseInt(document.getElementById('extendDays').value) || 1;
+  const days = parseInt(document.getElementById('extendDays').value)||1;
   try {
     const res  = await fetch(`${API}/api/dashboard`, {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -699,137 +999,103 @@ async function doExtend() {
     });
     const data = await res.json();
     closeExtendModal();
-    if (data.success) { setDashStatus(`✓ Key diperpanjang ${days} hari`, 'ok'); loadKeys(); }
-    else setDashStatus('❌ ' + (data.error||'Gagal'), 'err');
-  } catch(e) { setDashStatus('❌ Koneksi error', 'err'); closeExtendModal(); }
+    if (data.success) { setDashStatus(`✓ Key +${days} hari`,'ok'); loadKeys(); }
+    else setDashStatus('❌ '+(data.error||'Gagal'),'err');
+  } catch(e) { setDashStatus('❌ Koneksi error','err'); closeExtendModal(); }
 }
 document.getElementById('extendModal').addEventListener('click', function(e) {
   if (e.target === this) closeExtendModal();
 });
 
-// ── LOGS ──
 async function loadLogs() {
-  document.getElementById('logList').innerHTML = '<div class="empty">Memuat log...</div>';
+  document.getElementById('logList').innerHTML = '<div class="empty">⏳ Memuat log...</div>';
   try {
     const res  = await fetch(`${API}/api/dashboard?secret=${encodeURIComponent(_secret)}&action=logs`);
     const data = await res.json();
-    renderLogs(data.logs || []);
+    renderLogs(data.logs||[]);
   } catch(e) {
-    document.getElementById('logList').innerHTML = '<div class="empty" style="color:var(--red)">Gagal memuat log</div>';
+    document.getElementById('logList').innerHTML = '<div class="empty" style="color:var(--red)">❌ Gagal memuat log</div>';
   }
 }
 function renderLogs(logs) {
   if (!logs.length) {
-    document.getElementById('logList').innerHTML = '<div class="empty">Belum ada log aktivitas</div>';
+    document.getElementById('logList').innerHTML = '<div class="empty"><div class="empty-icon">📋</div>Belum ada log aktivitas</div>';
     return;
   }
-  const tagClass = { delete:'tag-delete', genkey:'tag-genkey', extend:'tag-extend', resethwid:'tag-resethwid', bulkdelete:'tag-bulkdelete' };
+  const tagClass = {delete:'tag-delete',genkey:'tag-genkey',extend:'tag-extend',resethwid:'tag-resethwid',bulkdelete:'tag-bulkdelete',saveconfig:'tag-saveconfig'};
   document.getElementById('logList').innerHTML = logs.map(l => {
     const ts  = new Date(l.ts).toLocaleString('id-ID');
-    const cls = tagClass[l.action] || 'tag-default';
+    const cls = tagClass[l.action]||'tag-default';
     return `<div class="log-item">
       <div class="log-ts">${ts}</div>
-      <div class="log-action"><span class="tag ${cls}">${l.action}</span>${l.detail || ''}</div>
+      <div class="log-action"><span class="tag ${cls}">${l.action}</span>${l.detail||''}</div>
     </div>`;
   }).join('');
 }
 
-// ── CHART (canvas manual, tanpa library) ──
 function buildChart() {
   if (!_allKeys.length) return;
   const canvas = document.getElementById('myChart');
   const ctx    = canvas.getContext('2d');
-
-  // Hitung key dibuat per hari (7 hari terakhir)
-  const days = 7;
-  const labels = [];
-  const counts = [];
-  for (let i = days - 1; i >= 0; i--) {
+  const days   = 7;
+  const labels = [], counts = [];
+  for (let i = days-1; i >= 0; i--) {
     const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().substring(0, 10);
-    labels.push(d.toLocaleDateString('id-ID', { weekday:'short', day:'numeric' }));
-    counts.push(_allKeys.filter(k => (k.createdAt || '').startsWith(dateStr)).length);
+    d.setDate(d.getDate()-i);
+    labels.push(d.toLocaleDateString('id-ID',{weekday:'short',day:'numeric'}));
+    counts.push(_allKeys.filter(k=>(k.createdAt||'').startsWith(d.toISOString().substring(0,10))).length);
   }
-
-  // Update stat cards
   const today = new Date().toISOString().substring(0,10);
-  document.getElementById('ch-today').textContent = _allKeys.filter(k => (k.createdAt||'').startsWith(today)).length;
-  document.getElementById('ch-week').textContent  = counts.reduce((a,b) => a+b, 0);
-  const activePct = _allKeys.length ? Math.round(_allKeys.filter(k=>!k.expired).length / _allKeys.length * 100) : 0;
-  document.getElementById('ch-active-pct').textContent = activePct + '%';
+  document.getElementById('ch-today').textContent = _allKeys.filter(k=>(k.createdAt||'').startsWith(today)).length;
+  document.getElementById('ch-week').textContent  = counts.reduce((a,b)=>a+b,0);
+  const pct = _allKeys.length ? Math.round(_allKeys.filter(k=>!k.expired).length/_allKeys.length*100) : 0;
+  document.getElementById('ch-active-pct').textContent = pct+'%';
 
-  // Draw chart
-  const W = canvas.parentElement.offsetWidth || 600;
-  canvas.width  = W;
-  canvas.height = 200;
+  const W = canvas.parentElement.offsetWidth||600;
+  canvas.width = W; canvas.height = 200;
+  const pad={top:20,right:20,bottom:40,left:36};
+  const cW=W-pad.left-pad.right, cH=canvas.height-pad.top-pad.bottom;
+  const maxV=Math.max(...counts,1);
+  ctx.clearRect(0,0,W,canvas.height);
 
-  const pad  = { top:20, right:20, bottom:40, left:36 };
-  const cW   = W - pad.left - pad.right;
-  const cH   = canvas.height - pad.top - pad.bottom;
-  const maxV = Math.max(...counts, 1);
-
-  ctx.clearRect(0, 0, W, canvas.height);
-
-  // Grid lines
-  ctx.strokeStyle = 'rgba(120,120,255,0.08)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad.top + cH * (1 - i / 4);
-    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
-    ctx.fillStyle = 'rgba(100,100,130,0.8)';
-    ctx.font = '10px Space Mono, monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(Math.round(maxV * i / 4), pad.left - 6, y + 3);
+  ctx.strokeStyle='rgba(0,200,255,0.06)'; ctx.lineWidth=1;
+  for (let i=0;i<=4;i++) {
+    const y=pad.top+cH*(1-i/4);
+    ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+cW,y); ctx.stroke();
+    ctx.fillStyle='rgba(90,106,126,0.8)'; ctx.font='10px JetBrains Mono,monospace';
+    ctx.textAlign='right'; ctx.fillText(Math.round(maxV*i/4),pad.left-6,y+3);
   }
 
-  // Bars
-  const barW = cW / days * 0.5;
-  const gap  = cW / days;
-  counts.forEach((v, i) => {
-    const x = pad.left + gap * i + gap * 0.25;
-    const h = cH * (v / maxV);
-    const y = pad.top + cH - h;
-
-    // Gradient fill
-    const grad = ctx.createLinearGradient(0, y, 0, pad.top + cH);
-    grad.addColorStop(0, 'rgba(96,96,255,0.9)');
-    grad.addColorStop(1, 'rgba(96,96,255,0.2)');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.roundRect(x, y, barW, h, [4,4,0,0]);
-    ctx.fill();
-
-    // Value label
-    if (v > 0) {
-      ctx.fillStyle = '#c8c8ee';
-      ctx.font = 'bold 11px Space Mono, monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(v, x + barW / 2, y - 5);
+  const barW=cW/days*0.55, gap=cW/days;
+  counts.forEach((v,i) => {
+    const x=pad.left+gap*i+gap*0.225;
+    const h=cH*(v/maxV)||2;
+    const y=pad.top+cH-h;
+    const grad=ctx.createLinearGradient(0,y,0,pad.top+cH);
+    grad.addColorStop(0,'rgba(0,200,255,0.9)');
+    grad.addColorStop(1,'rgba(123,79,255,0.3)');
+    ctx.fillStyle=grad;
+    ctx.beginPath(); ctx.roundRect(x,y,barW,h,[4,4,0,0]); ctx.fill();
+    if (v>0) {
+      ctx.fillStyle='#c4d4e8'; ctx.font='bold 11px JetBrains Mono,monospace';
+      ctx.textAlign='center'; ctx.fillText(v,x+barW/2,y-5);
     }
-
-    // X label
-    ctx.fillStyle = 'rgba(100,100,130,0.8)';
-    ctx.font = '10px Space Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(labels[i], x + barW / 2, pad.top + cH + 18);
+    ctx.fillStyle='rgba(90,106,126,0.8)'; ctx.font='10px JetBrains Mono,monospace';
+    ctx.textAlign='center'; ctx.fillText(labels[i],x+barW/2,pad.top+cH+18);
   });
 }
 
-// ── CONFIG / SETTINGS ──
 async function loadConfig() {
-  try {
-    const cfg = window._config || {};
-    document.getElementById('cfgMaxPerDay').value = cfg.maxPerDay || 0;
-    document.getElementById('cfgMaxTotal').value  = cfg.maxTotal  || 0;
-  } catch(e) {}
+  const cfg = window._config||{};
+  document.getElementById('cfgMaxPerDay').value = cfg.maxPerDay||0;
+  document.getElementById('cfgMaxTotal').value  = cfg.maxTotal||0;
 }
 
 async function doSaveConfig() {
-  const maxPerDay = parseInt(document.getElementById('cfgMaxPerDay').value) || 0;
-  const maxTotal  = parseInt(document.getElementById('cfgMaxTotal').value)  || 0;
+  const maxPerDay = parseInt(document.getElementById('cfgMaxPerDay').value)||0;
+  const maxTotal  = parseInt(document.getElementById('cfgMaxTotal').value)||0;
   const s = document.getElementById('cfg-status');
-  s.textContent = 'Menyimpan...'; s.className = 'status';
+  s.textContent='Menyimpan...'; s.className='status';
   try {
     const res  = await fetch(`${API}/api/dashboard`, {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -837,15 +1103,11 @@ async function doSaveConfig() {
     });
     const data = await res.json();
     if (data.success) {
-      window._config = data.config;
-      s.textContent = `✓ Tersimpan! maxPerDay=${maxPerDay || '∞'}, maxTotal=${maxTotal || '∞'}`;
-      s.className = 'status ok';
-    } else {
-      s.textContent = '❌ ' + (data.error||'Gagal'); s.className = 'status err';
-    }
-  } catch(e) {
-    s.textContent = '❌ Koneksi error'; s.className = 'status err';
-  }
+      window._config=data.config;
+      s.textContent=`✓ Tersimpan! maxPerDay=${maxPerDay||'∞'}, maxTotal=${maxTotal||'∞'}`;
+      s.className='status ok';
+    } else { s.textContent='❌ '+(data.error||'Gagal'); s.className='status err'; }
+  } catch(e) { s.textContent='❌ Koneksi error'; s.className='status err'; }
 }
 </script>
 </body>
