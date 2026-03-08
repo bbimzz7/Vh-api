@@ -234,8 +234,9 @@ canvas { width:100% !important; }
         <!-- Tabs -->
         <div class="tabs">
           <button class="tab active" onclick="switchTab('keys')">🔑 Keys</button>
-          <button class="tab" onclick="switchTab('logs')">📋 Log Aktivitas</button>
+          <button class="tab" onclick="switchTab('logs')">📋 Log</button>
           <button class="tab" onclick="switchTab('chart')">📊 Statistik</button>
+          <button class="tab" onclick="switchTab('settings')">⚙️ Pengaturan</button>
         </div>
 
         <!-- ── TAB: KEYS ── -->
@@ -278,6 +279,7 @@ canvas { width:100% !important; }
                 <tr>
                   <th onclick="sortBy('key')">Key <span class="sort-icon" id="sort-key">↕</span></th>
                   <th onclick="sortBy('expired')">Status <span class="sort-icon" id="sort-expired">↕</span></th>
+                  <th>Username</th>
                   <th>HWID</th>
                   <th onclick="sortBy('expires')">Expire <span class="sort-icon" id="sort-expires">↕</span></th>
                   <th onclick="sortBy('createdAt')">Dibuat <span class="sort-icon" id="sort-createdAt">↕</span></th>
@@ -312,6 +314,35 @@ canvas { width:100% !important; }
           </div>
         </div>
 
+        <!-- ── TAB: SETTINGS ── -->
+        <div id="tab-settings" style="display:none">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:20px">⚙️ Pengaturan Get Key</div>
+
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px">
+            <div style="font-size:12px;color:var(--text);font-weight:600;margin-bottom:6px">🔢 Max Key Per Hari</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:12px">Berapa key baru yang bisa dibuat dalam 1 hari. Set 0 = unlimited.</div>
+            <div style="display:flex;gap:8px">
+              <div class="input-wrap" style="flex:1;margin-bottom:0"><input type="number" id="cfgMaxPerDay" placeholder="0 = unlimited" min="0"></div>
+            </div>
+          </div>
+
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px">
+            <div style="font-size:12px;color:var(--text);font-weight:600;margin-bottom:6px">📦 Max Total Key Aktif</div>
+            <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:12px">Jumlah maksimal key aktif secara keseluruhan. Set 0 = unlimited.</div>
+            <div style="display:flex;gap:8px">
+              <div class="input-wrap" style="flex:1;margin-bottom:0"><input type="number" id="cfgMaxTotal" placeholder="0 = unlimited" min="0"></div>
+            </div>
+          </div>
+
+          <div style="background:rgba(96,96,255,0.06);border:1px solid rgba(96,96,255,0.2);border-radius:12px;padding:14px;margin-bottom:16px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.8">
+            💡 Contoh: maxPerDay=<span style="color:var(--accent)">17</span>, maxTotal=<span style="color:var(--accent)">100</span><br>
+            → Setiap hari max 17 key baru bisa dibuat<br>
+            → Kalau total key aktif sudah 100, tidak bisa tambah lagi
+          </div>
+
+          <button class="btn btn-primary" onclick="doSaveConfig()">💾 Simpan Pengaturan</button>
+          <div id="cfg-status" class="status" style="margin-top:10px"></div>
+        </div>
         <div id="dash-status"></div>
       </div>
     </div>
@@ -457,6 +488,7 @@ async function loadKeys() {
     const res  = await fetch(`${API}/api/dashboard?secret=${encodeURIComponent(_secret)}&action=list`);
     const data = await res.json();
     _allKeys = data.keys || [];
+    if (data.config) window._config = data.config;
     renderStats(data.stats);
     renderTable();
     buildChart();
@@ -468,14 +500,15 @@ async function loadKeys() {
 
 // ── TABS ──
 function switchTab(name) {
-  ['keys','logs','chart'].forEach(t => {
+  ['keys','logs','chart','settings'].forEach(t => {
     document.getElementById('tab-'+t).style.display = t === name ? 'block' : 'none';
   });
   document.querySelectorAll('.tab').forEach((el,i) => {
-    el.classList.toggle('active', ['keys','logs','chart'][i] === name);
+    el.classList.toggle('active', ['keys','logs','chart','settings'][i] === name);
   });
   if (name === 'logs') loadLogs();
   if (name === 'chart') buildChart();
+  if (name === 'settings') loadConfig();
 }
 
 // ── STATS ──
@@ -537,9 +570,11 @@ function renderTable() {
     const expDate = k.expires ? k.expires.substring(0,10) : '-';
     const created = k.createdAt ? k.createdAt.substring(0,10) : '-';
     const hwidShort = k.hwid ? k.hwid.substring(0,14)+'…' : '';
+    const uname = k.username ? `<span style="color:var(--text)">${k.username}</span>` : '<span class="badge badge-muted">-</span>';
     return `<tr>
       <td style="color:var(--green);cursor:pointer" onclick="navigator.clipboard.writeText('${k.key}')" title="Klik untuk salin">${k.key}</td>
       <td><span class="badge ${k.expired ? 'badge-red':'badge-green'}">${k.expired?'Expired':'Aktif'}</span></td>
+      <td style="font-size:11px">${uname}</td>
       <td style="color:var(--muted);font-size:10px">${k.hwid ? `<span title="${k.hwid}">${hwidShort}</span>` : '<span class="badge badge-muted">Bebas</span>'}</td>
       <td style="color:var(--muted)">${expDate}</td>
       <td style="color:var(--muted)">${created}</td>
@@ -755,6 +790,38 @@ function buildChart() {
     ctx.textAlign = 'center';
     ctx.fillText(labels[i], x + barW / 2, pad.top + cH + 18);
   });
+}
+
+// ── CONFIG / SETTINGS ──
+async function loadConfig() {
+  try {
+    const cfg = window._config || {};
+    document.getElementById('cfgMaxPerDay').value = cfg.maxPerDay || 0;
+    document.getElementById('cfgMaxTotal').value  = cfg.maxTotal  || 0;
+  } catch(e) {}
+}
+
+async function doSaveConfig() {
+  const maxPerDay = parseInt(document.getElementById('cfgMaxPerDay').value) || 0;
+  const maxTotal  = parseInt(document.getElementById('cfgMaxTotal').value)  || 0;
+  const s = document.getElementById('cfg-status');
+  s.textContent = 'Menyimpan...'; s.className = 'status';
+  try {
+    const res  = await fetch(`${API}/api/dashboard`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ secret:_secret, action:'saveconfig', maxPerDay, maxTotal })
+    });
+    const data = await res.json();
+    if (data.success) {
+      window._config = data.config;
+      s.textContent = `✓ Tersimpan! maxPerDay=${maxPerDay || '∞'}, maxTotal=${maxTotal || '∞'}`;
+      s.className = 'status ok';
+    } else {
+      s.textContent = '❌ ' + (data.error||'Gagal'); s.className = 'status err';
+    }
+  } catch(e) {
+    s.textContent = '❌ Koneksi error'; s.className = 'status err';
+  }
 }
 </script>
 </body>
