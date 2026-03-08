@@ -1,40 +1,38 @@
-// GET /api/getkey?hwid=XXXX
-// Dipanggil setelah user selesai Linkvertise
-// Returns { key: "VH-XXXX-XXXX-XXXX", expires: "ISO" }
+// GET /api/getkey?hwid=XXXX&username=XXXX&userId=XXXX
+// Returns { key, expires, reused }
 
 import crypto from "crypto";
 
 const GITHUB_TOKEN  = process.env.GITHUB_TOKEN;
 const GITHUB_REPO   = process.env.GITHUB_REPO;
 const GITHUB_FILE   = process.env.GITHUB_FILE;
+const CONFIG_FILE   = process.env.GITHUB_CONFIG_FILE || "config.json";
 const KEY_EXPIRE_MS = 24 * 60 * 60 * 1000;
 
-async function getKeys() {
+async function ghGet(file) {
     const res = await fetch(
-        `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`,
+        `https://api.github.com/repos/${GITHUB_REPO}/contents/${file}`,
         { headers: { Authorization: `token ${GITHUB_TOKEN}`, "User-Agent": "vh-key-api", "Cache-Control": "no-cache" } }
     );
-    if (!res.ok) return { keys: {}, sha: null };
-    const data = await res.json();
-    const content = JSON.parse(Buffer.from(data.content, "base64").toString("utf8"));
-    return { keys: content, sha: data.sha };
+    if (!res.ok) return { data: {}, sha: null };
+    const json = await res.json();
+    const content = JSON.parse(Buffer.from(json.content, "base64").toString("utf8"));
+    return { data: content, sha: json.sha };
 }
 
-async function saveKeys(keys, sha) {
-    const content = Buffer.from(JSON.stringify(keys, null, 2)).toString("base64");
+async function ghPut(file, data, sha, message) {
+    const content = Buffer.from(JSON.stringify(data, null, 2)).toString("base64");
+    const body = { message, content };
+    if (sha) body.sha = sha;
     const res = await fetch(
-        `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE}`,
+        `https://api.github.com/repos/${GITHUB_REPO}/contents/${file}`,
         {
             method: "PUT",
-            headers: {
-                Authorization: `token ${GITHUB_TOKEN}`,
-                "Content-Type": "application/json",
-                "User-Agent": "vh-key-api",
-            },
-            body: JSON.stringify({ message: "generate key via getkey", content, sha }),
+            headers: { Authorization: `token ${GITHUB_TOKEN}`, "Content-Type": "application/json", "User-Agent": "vh-key-api" },
+            body: JSON.stringify(body),
         }
     );
-    if (res.status === 409) throw new Error("Konflik data, coba lagi sebentar");
+    if (res.status === 409) throw new Error("Konflik data, coba lagi");
     if (!res.ok) throw new Error("Gagal simpan ke GitHub");
 }
 
@@ -43,42 +41,79 @@ function generateKey() {
     return `VH-${part()}-${part()}-${part()}`;
 }
 
+function getTodayStr() {
+    return new Date().toISOString().substring(0, 10);
+}
+
 export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     if (req.method === "OPTIONS") return res.status(200).end();
     if (req.method !== "GET")    return res.status(405).json({ error: "Method not allowed" });
 
-    const hwid = (req.query.hwid || "").trim();
+    const hwid     = (req.query.hwid     || "").trim();
+    const username = (req.query.username || "").trim();
+    const userId   = (req.query.userId   || "").trim();
 
-    if (!hwid)          return res.status(400).json({ error: "HWID tidak boleh kosong" });
+    if (!hwid)             return res.status(400).json({ error: "HWID tidak boleh kosong" });
     if (hwid.length > 128) return res.status(400).json({ error: "HWID tidak valid" });
 
     try {
-        const { keys, sha } = await getKeys();
+        // Load keys + config secara paralel
+        const [{ data: keys, sha: keysSha }, { data: config }] = await Promise.all([
+            ghGet(GITHUB_FILE),
+            ghGet(CONFIG_FILE),
+        ]);
 
-        if (sha === null) {
-            return res.status(500).json({ error: "File keys.json tidak ditemukan di repo" });
-        }
+        const now     = Date.now();
+        const today   = getTodayStr();
 
-        const now = Date.now();
+        // Ambil limit dari config (default unlimited jika belum diset)
+        const maxPerDay   = config.maxPerDay   || 0; // 0 = unlimited
+        const maxTotal    = config.maxTotal    || 0; // 0 = unlimited
 
-        // Cek kalau HWID ini udah punya key yang masih valid
+        // Hitung stats
+        const allKeys     = Object.values(keys);
+        const totalActive = allKeys.filter(v => new Date(v.expires).getTime() > now).length;
+        const todayCount  = allKeys.filter(v => (v.createdAt || "").startsWith(today)).length;
+
+        // Cek apakah HWID sudah punya key aktif → return key yang sama
         for (const [k, v] of Object.entries(keys)) {
             if (v.hwid === hwid && new Date(v.expires).getTime() > now) {
                 return res.json({ key: k, expires: v.expires, reused: true });
             }
         }
 
-        // Generate key baru, pastikan unik
+        // Cek limit total
+        if (maxTotal > 0 && totalActive >= maxTotal) {
+            return res.status(429).json({
+                error: `Limit tercapai! Max ${maxTotal} key aktif. Coba lagi nanti.`
+            });
+        }
+
+        // Cek limit per hari
+        if (maxPerDay > 0 && todayCount >= maxPerDay) {
+            return res.status(429).json({
+                error: `Limit harian tercapai! Max ${maxPerDay} key per hari. Coba besok.`
+            });
+        }
+
+        // Generate key baru
         let key;
         do { key = generateKey(); } while (keys[key]);
 
         const expires = new Date(now + KEY_EXPIRE_MS).toISOString();
-        keys[key]     = { expires, hwid, createdAt: new Date().toISOString() };
+        keys[key] = {
+            expires,
+            hwid,
+            username:  username || null,
+            userId:    userId   || null,
+            createdAt: new Date().toISOString(),
+        };
 
-        await saveKeys(keys, sha);
+        await ghPut(GITHUB_FILE, keys, keysSha, "generate key via getkey");
         return res.json({ key, expires, reused: false });
+
     } catch (e) {
         console.error("[getkey] Error:", e.message);
         return res.status(500).json({ error: "Server error, coba lagi" });

@@ -1,22 +1,19 @@
 // /api/dashboard.js
-// GET  ?secret=X&action=list|logs
-// POST { secret, action: "delete"|"resethwid"|"genkey"|"extend"|"bulkdelete", ... }
-
 const GITHUB_TOKEN  = process.env.GITHUB_TOKEN;
 const GITHUB_REPO   = process.env.GITHUB_REPO;
 const GITHUB_FILE   = process.env.GITHUB_FILE;
-const LOG_FILE      = process.env.GITHUB_LOG_FILE || "logs.json"; // file log terpisah
+const LOG_FILE      = process.env.GITHUB_LOG_FILE   || "logs.json";
+const CONFIG_FILE   = process.env.GITHUB_CONFIG_FILE || "config.json";
 const ADMIN_SECRET  = process.env.ADMIN_SECRET;
 
 import crypto from "crypto";
 
-// ── GitHub helpers ─────────────────────────────────────────
 async function ghGet(file) {
     const res = await fetch(
         `https://api.github.com/repos/${GITHUB_REPO}/contents/${file}`,
         { headers: { Authorization: `token ${GITHUB_TOKEN}`, "User-Agent": "vh-key-api", "Cache-Control": "no-cache" } }
     );
-    if (!res.ok) return { data: file.endsWith(".json") ? {} : [], sha: null };
+    if (!res.ok) return { data: file.endsWith(".json") ? (file === LOG_FILE ? [] : {}) : {}, sha: null };
     const json = await res.json();
     const content = JSON.parse(Buffer.from(json.content, "base64").toString("utf8"));
     return { data: content, sha: json.sha };
@@ -36,7 +33,7 @@ async function ghPut(file, data, sha, message) {
     );
     if (res.status === 409) throw new Error("Konflik data, coba lagi");
     if (!res.ok) throw new Error("Gagal simpan ke GitHub");
-    return res.ok;
+    return true;
 }
 
 function generateKey() {
@@ -44,22 +41,15 @@ function generateKey() {
     return `VH-${part()}-${part()}-${part()}`;
 }
 
-// ── Log helper ─────────────────────────────────────────────
 async function addLog(action, detail) {
     try {
         const { data: logs, sha } = await ghGet(LOG_FILE);
         const arr = Array.isArray(logs) ? logs : [];
         arr.unshift({ ts: new Date().toISOString(), action, detail });
-        // Simpan max 200 log terakhir
-        const trimmed = arr.slice(0, 200);
-        await ghPut(LOG_FILE, trimmed, sha, "add log");
-    } catch(e) {
-        // Log gagal gak perlu throw, jangan sampai ganggu operasi utama
-        console.error("[log] Failed:", e.message);
-    }
+        await ghPut(LOG_FILE, arr.slice(0, 200), sha, "add log");
+    } catch(e) { console.error("[log]", e.message); }
 }
 
-// ── Auth helper ────────────────────────────────────────────
 function authOk(secret) {
     if (!secret || !ADMIN_SECRET) return false;
     try {
@@ -69,7 +59,6 @@ function authOk(secret) {
     } catch { return false; }
 }
 
-// ── Handler ────────────────────────────────────────────────
 export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -83,25 +72,48 @@ export default async function handler(req, res) {
 
     try {
         const now = Date.now();
+        const today = new Date().toISOString().substring(0, 10);
 
         // ── LIST ──────────────────────────────────────────
         if (action === "list") {
-            const { data: keys } = await ghGet(GITHUB_FILE);
+            const [{ data: keys }, { data: config }] = await Promise.all([
+                ghGet(GITHUB_FILE),
+                ghGet(CONFIG_FILE),
+            ]);
             const list = Object.entries(keys).map(([k, v]) => ({
                 key:       k,
                 expires:   v.expires,
                 expired:   new Date(v.expires).getTime() < now,
-                hwid:      v.hwid || null,
-                boundAt:   v.boundAt || null,
+                hwid:      v.hwid    || null,
+                username:  v.username || null,
+                userId:    v.userId   || null,
+                boundAt:   v.boundAt  || null,
                 createdAt: v.createdAt || null,
-                lastUsed:  v.lastUsed || null,
-                label:     v.label || null,
+                lastUsed:  v.lastUsed  || null,
             }));
-            const total   = list.length;
-            const active  = list.filter(x => !x.expired).length;
-            const expired = list.filter(x => x.expired).length;
-            const bound   = list.filter(x => x.hwid).length;
-            return res.json({ keys: list, stats: { total, active, expired, bound } });
+            const total      = list.length;
+            const active     = list.filter(x => !x.expired).length;
+            const expired    = list.filter(x => x.expired).length;
+            const bound      = list.filter(x => x.hwid).length;
+            const todayCount = list.filter(x => (x.createdAt||'').startsWith(today)).length;
+            return res.json({ keys: list, stats: { total, active, expired, bound, todayCount }, config });
+        }
+
+        // ── GET CONFIG ────────────────────────────────────
+        if (action === "getconfig") {
+            const { data: config } = await ghGet(CONFIG_FILE);
+            return res.json({ config });
+        }
+
+        // ── SAVE CONFIG ───────────────────────────────────
+        if (action === "saveconfig") {
+            const { maxPerDay, maxTotal } = req.body || {};
+            const { data: config, sha } = await ghGet(CONFIG_FILE);
+            config.maxPerDay = maxPerDay !== undefined ? parseInt(maxPerDay) || 0 : config.maxPerDay || 0;
+            config.maxTotal  = maxTotal  !== undefined ? parseInt(maxTotal)  || 0 : config.maxTotal  || 0;
+            await ghPut(CONFIG_FILE, config, sha, "update config");
+            addLog("saveconfig", `maxPerDay=${config.maxPerDay}, maxTotal=${config.maxTotal}`);
+            return res.json({ success: true, config });
         }
 
         // ── LOGS ──────────────────────────────────────────
@@ -126,10 +138,7 @@ export default async function handler(req, res) {
             const { data: keys, sha } = await ghGet(GITHUB_FILE);
             let count = 0;
             for (const [k, v] of Object.entries(keys)) {
-                if (new Date(v.expires).getTime() < now) {
-                    delete keys[k];
-                    count++;
-                }
+                if (new Date(v.expires).getTime() < now) { delete keys[k]; count++; }
             }
             if (count > 0) await ghPut(GITHUB_FILE, keys, sha, "bulk delete expired");
             addLog("bulkdelete", `${count} key expired dihapus`);
@@ -148,29 +157,25 @@ export default async function handler(req, res) {
             return res.json({ success: true });
         }
 
-        // ── EXTEND EXPIRY ─────────────────────────────────
+        // ── EXTEND ────────────────────────────────────────
         if (action === "extend") {
             const key  = (req.body.key || "").toUpperCase();
-            const days = Math.min(Math.max(parseInt(req.body.days) || 1, 1), 30);
+            const days = Math.min(Math.max(parseInt(req.body.days) || 1, 1), 365);
             const { data: keys, sha } = await ghGet(GITHUB_FILE);
             if (!keys[key]) return res.json({ error: "Key tidak ditemukan" });
-            // Extend dari sekarang atau dari expiry yang ada (ambil yang lebih besar)
-            const currentExpiry = new Date(keys[key].expires).getTime();
-            const base = Math.max(currentExpiry, now);
+            const base = Math.max(new Date(keys[key].expires).getTime(), now);
             keys[key].expires = new Date(base + days * 24 * 60 * 60 * 1000).toISOString();
-            await ghPut(GITHUB_FILE, keys, sha, "extend key expiry");
-            addLog("extend", `Key ${key} diperpanjang ${days} hari`);
+            await ghPut(GITHUB_FILE, keys, sha, "extend key");
+            addLog("extend", `Key ${key} +${days} hari`);
             return res.json({ success: true, expires: keys[key].expires });
         }
 
         // ── GENERATE KEY ──────────────────────────────────
         if (action === "genkey") {
-            // [BUG FIX] Baca expireDays dari body, jangan hardcode
             const count      = Math.min(Math.max(parseInt(req.body.count) || 1, 1), 50);
-            const expireDays = Math.min(Math.max(parseInt(req.body.expireDays) || 1, 1), 30);
+            const expireDays = Math.min(Math.max(parseInt(req.body.expireDays) || 1, 1), 365);
             const expireMs   = expireDays * 24 * 60 * 60 * 1000;
             const expires    = new Date(now + expireMs).toISOString();
-
             const { data: keys, sha } = await ghGet(GITHUB_FILE);
             const generated = [];
             for (let i = 0; i < count; i++) {
@@ -180,7 +185,7 @@ export default async function handler(req, res) {
                 generated.push(key);
             }
             await ghPut(GITHUB_FILE, keys, sha, "generate keys");
-            addLog("genkey", `${count} key dibuat, expire ${expireDays} hari`);
+            addLog("genkey", `${count} key, ${expireDays} hari`);
             return res.json({ success: true, keys: generated, expires, expireDays });
         }
 
