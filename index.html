@@ -406,10 +406,10 @@ function initGetKey() {
     document.getElementById('hwidDisplay').textContent = '🔒 HWID Terenkripsi';
   } else {
     // Fallback browser HWID (kalau buka manual tanpa token)
-    const hwid = genBrowserHwid();
+    window._browserHwid = genBrowserHwid();
     window._tokenD = null;
     window._tokenS = null;
-    document.getElementById('hwidDisplay').textContent = hwid.substring(0,20) + '...';
+    document.getElementById('hwidDisplay').textContent = window._browserHwid.substring(0,20) + '...';
   }
 }
 function genBrowserHwid() {
@@ -427,16 +427,20 @@ function setGkStatus(msg, type='') {
   s.textContent = msg; s.className = 'status ' + type;
 }
 async function doGetKey() {
-  const hwid = window._hwid;
-  const btn  = document.getElementById('btnGetKey');
+  const btn = document.getElementById('btnGetKey');
   btn.disabled = true; btn.textContent = '⏳ Memproses...';
   setGkStatus('Mengambil key...');
   try {
-    const username = window._username || '';
-    const userId   = window._userId   || '';
-    const res  = await fetch(`${API}/api/getkey?hwid=${encodeURIComponent(hwid)}&username=${encodeURIComponent(username)}&userId=${encodeURIComponent(userId)}`, {
-      headers: { "Accept": "application/json" }
-    });
+    let url;
+    if (window._tokenD && window._tokenS) {
+      // Pakai signed token dari Lua
+      url = `${API}/api/getkey?d=${encodeURIComponent(window._tokenD)}&s=${encodeURIComponent(window._tokenS)}`;
+    } else {
+      // Fallback pakai browser HWID
+      const hwid = genBrowserHwid();
+      url = `${API}/api/getkey?hwid=${encodeURIComponent(hwid)}`;
+    }
+    const res = await fetch(url, { headers: { "Accept": "application/json" } });
     const data = await res.json();
     if (data.key) {
       document.getElementById('keyText').textContent = data.key;
