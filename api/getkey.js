@@ -58,6 +58,15 @@ export default async function handler(req, res) {
     if (!hwid)             return res.status(400).json({ error: "HWID tidak boleh kosong" });
     if (hwid.length > 128) return res.status(400).json({ error: "HWID tidak valid" });
 
+    // Kalau dari browser (bukan script/HttpGet), redirect ke halaman web
+    const userAgent = req.headers["user-agent"] || "";
+    const isBrowser = userAgent.includes("Mozilla") || userAgent.includes("Chrome") || userAgent.includes("Safari");
+    const isScript  = userAgent.includes("Roblox") || userAgent.includes("vh-key") || req.headers["x-script"] === "1";
+    if (isBrowser && !isScript) {
+        const params = new URLSearchParams({ hwid, username, userId });
+        return res.redirect(302, `/?${params.toString()}`);
+    }
+
     try {
         // Load keys + config secara paralel
         const [{ data: keys, sha: keysSha }, { data: config }] = await Promise.all([
@@ -77,9 +86,14 @@ export default async function handler(req, res) {
         const totalActive = allKeys.filter(v => new Date(v.expires).getTime() > now).length;
         const todayCount  = allKeys.filter(v => (v.createdAt || "").startsWith(today)).length;
 
-        // Cek apakah HWID sudah punya key aktif → return key yang sama
+        // Cek apakah HWID sudah punya key aktif → return key yang sama + update username
         for (const [k, v] of Object.entries(keys)) {
             if (v.hwid === hwid && new Date(v.expires).getTime() > now) {
+                // Update username & userId kalau ada yang baru
+                let updated = false;
+                if (username && v.username !== username) { keys[k].username = username; updated = true; }
+                if (userId   && v.userId   !== userId)   { keys[k].userId   = userId;   updated = true; }
+                if (updated) await ghPut(GITHUB_FILE, keys, keysSha, "update username");
                 return res.json({ key: k, expires: v.expires, reused: true });
             }
         }
