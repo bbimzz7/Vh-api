@@ -391,10 +391,16 @@ if (location.pathname === '/dashboard') {
 // GET KEY
 // ══════════════════════════════════════════
 function initGetKey() {
-  const params = new URLSearchParams(location.search);
-  const hwid   = params.get('hwid') || genBrowserHwid();
-  window._hwid = hwid;
+  const params   = new URLSearchParams(location.search);
+  const hwid     = params.get('hwid') || genBrowserHwid();
+  const username = params.get('username') || '';
+  const userId   = params.get('userId')   || '';
+  window._hwid     = hwid;
+  window._username = username;
+  window._userId   = userId;
   document.getElementById('hwidDisplay').textContent = hwid.substring(0,28) + '...';
+
+  // hwid dari URL, tunggu user klik manual
 }
 function genBrowserHwid() {
   let id = null;
@@ -416,7 +422,9 @@ async function doGetKey() {
   btn.disabled = true; btn.textContent = '⏳ Memproses...';
   setGkStatus('Mengambil key...');
   try {
-    const res  = await fetch(`${API}/api/getkey?hwid=${encodeURIComponent(hwid)}`);
+    const username = window._username || '';
+    const userId   = window._userId   || '';
+    const res  = await fetch(`${API}/api/getkey?hwid=${encodeURIComponent(hwid)}&username=${encodeURIComponent(username)}&userId=${encodeURIComponent(userId)}`);
     const data = await res.json();
     if (data.key) {
       document.getElementById('keyText').textContent = data.key;
