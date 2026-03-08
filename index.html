@@ -391,16 +391,24 @@ if (location.pathname === '/dashboard') {
 // GET KEY
 // ══════════════════════════════════════════
 function initGetKey() {
-  const params   = new URLSearchParams(location.search);
-  const hwid     = params.get('hwid') || genBrowserHwid();
-  const username = params.get('username') || '';
-  const userId   = params.get('userId')   || '';
-  window._hwid     = hwid;
-  window._username = username;
-  window._userId   = userId;
-  document.getElementById('hwidDisplay').textContent = hwid.substring(0,28) + '...';
+  const params = new URLSearchParams(location.search);
+  const d      = params.get('d');
+  const s      = params.get('s');
 
-  // hwid dari URL, tunggu user klik manual
+  if (d && s) {
+    // Ada signed token → simpan untuk dikirim ke API
+    window._tokenD = d;
+    window._tokenS = s;
+    window._hwid   = 'secured';
+    document.getElementById('hwidDisplay').textContent = '🔒 Terverifikasi';
+  } else {
+    // Fallback browser HWID (kalau buka manual)
+    const hwid = genBrowserHwid();
+    window._hwid     = hwid;
+    window._tokenD   = null;
+    window._tokenS   = null;
+    document.getElementById('hwidDisplay').textContent = hwid.substring(0,20) + '...';
+  }
 }
 function genBrowserHwid() {
   let id = null;
