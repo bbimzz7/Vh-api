@@ -2,8 +2,6 @@
   "version": 2,
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/dashboard", "dest": "/publici/index.html" },
-    { "src": "/getkey", "dest": "/public/index.html" },
-    { "src": "/", "dest": "/public/index.html" }
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
