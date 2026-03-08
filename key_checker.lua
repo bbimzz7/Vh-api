@@ -1,238 +1,343 @@
--- VertictHub Key System
+-- VertictHub Key System v2
 -- Taruh di PALING ATAS sssource-1.lua, sebelum semua kode lain
+-- ============================================================
 
 local Players     = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
-local API_BASE    = "https://vh-api-alpha.vercel.app"  -- ganti dengan URL Vercel kamu
-local KEY_FILE    = "vh_key.txt"                      -- disimpan di folder executor
+local API_BASE  = "https://vh-key-api.vercel.app" -- ganti URL Vercel kamu
+local KEY_FILE  = "vh_key.txt"
+local RETRY_MAX = 3     -- [NEW] max retry kalau koneksi gagal
+local TIMEOUT   = 10    -- [NEW] timeout detik untuk polling
 
--- ── HWID: pakai kombinasi UserId + MachineId ──
+-- ── HWID ──────────────────────────────────────────────────
+-- [FIX] Fallback lebih robust kalau RbxAnalyticsService gagal
 local function getHWID()
     local uid = tostring(LocalPlayer.UserId)
     local mid = "unknown"
-    pcall(function() mid = tostring(game:GetService("RbxAnalyticsService"):GetClientId()) end)
+
+    local ok1 = pcall(function()
+        mid = tostring(game:GetService("RbxAnalyticsService"):GetClientId())
+    end)
+
+    -- [NEW] Fallback kedua pakai UserAgent hash
+    if not ok1 or mid == "unknown" or mid == "" then
+        pcall(function()
+            local info = LocalPlayer:GetJoinData()
+            mid = tostring(info and info.SourceGameId or "fallback")
+        end)
+    end
+
     return uid .. "-" .. mid
 end
 
--- ── Simpan / Load key dari file ───────────────
+-- ── Simpan / Load key ─────────────────────────────────────
 local function saveKey(key)
     pcall(function() writefile(KEY_FILE, key) end)
 end
 
 local function loadKey()
     local ok, key = pcall(function() return readfile(KEY_FILE) end)
-    if ok and key and #key > 0 then return key:gsub("%s+", "") end
+    if ok and type(key) == "string" and #key > 5 then
+        return key:match("^%s*(.-)%s*$") -- trim whitespace
+    end
     return nil
 end
 
--- ── GUI Key System ────────────────────────────
+-- [NEW] Hapus key tersimpan (dipanggil kalau expired/invalid)
+local function clearKey()
+    pcall(function() writefile(KEY_FILE, "") end)
+end
+
+-- ── HTTP request dengan retry ──────────────────────────────
+local function httpGet(url)
+    local result, err
+    for i = 1, RETRY_MAX do
+        local ok, res = pcall(function()
+            return game:HttpGet(url, true)
+        end)
+        if ok and res and #res > 0 then
+            return res, nil
+        end
+        err = res or "Koneksi gagal"
+        if i < RETRY_MAX then task.wait(1.5) end
+    end
+    return nil, err
+end
+
+-- ── Cek key ke API ────────────────────────────────────────
+local function checkKeyAPI(key, hwid)
+    local url = API_BASE
+        .. "/api/checkkey?key=" .. HttpService:UrlEncode(key)
+        .. "&hwid=" .. HttpService:UrlEncode(hwid)
+
+    local raw, httpErr = httpGet(url)
+    if not raw then
+        return false, "❌ Gagal koneksi ke server (" .. (httpErr or "?") .. ")"
+    end
+
+    -- [FIX] Tangani JSON parse error
+    local ok, data = pcall(function() return HttpService:JSONDecode(raw) end)
+    if not ok or type(data) ~= "table" then
+        return false, "❌ Response server tidak valid"
+    end
+
+    if data.valid then
+        local exp = ""
+        if data.expires then
+            -- Format tanggal expire jadi lebih readable
+            exp = " | Expire: " .. tostring(data.expires):sub(1, 10)
+        end
+        local msg = data.bound
+            and ("✅ Key aktif & terhubung ke device ini" .. exp)
+            or  ("✅ Key valid" .. exp)
+        return true, msg
+    else
+        -- [FIX] Clear key kalau expired supaya auto-load gak stuck
+        local reason = data.reason or "Key tidak valid"
+        if reason:find("expired") or reason:find("tidak ditemukan") then
+            clearKey()
+        end
+        return false, "❌ " .. reason
+    end
+end
+
+-- ══════════════════════════════════════════════════════════
+-- GUI
+-- ══════════════════════════════════════════════════════════
 
 local KeyGui = Instance.new("ScreenGui")
-KeyGui.Name           = "VHKeySystem"
-KeyGui.ResetOnSpawn   = false
-KeyGui.DisplayOrder   = 9999
-KeyGui.Parent         = LocalPlayer.PlayerGui
+KeyGui.Name          = "VHKeySystem"
+KeyGui.ResetOnSpawn  = false
+KeyGui.DisplayOrder  = 9999
+KeyGui.IgnoreGuiInset = true -- [FIX] Biar gak kegeser topbar
+KeyGui.Parent        = LocalPlayer:WaitForChild("PlayerGui")
 
+-- Overlay gelap
 local Overlay = Instance.new("Frame", KeyGui)
-Overlay.Size             = UDim2.new(1, 0, 1, 0)
-Overlay.BackgroundColor3 = Color3.fromRGB(5, 5, 10)
-Overlay.BackgroundTransparency = 0.2
-Overlay.BorderSizePixel  = 0
+Overlay.Size                  = UDim2.new(1, 0, 1, 0)
+Overlay.BackgroundColor3      = Color3.fromRGB(2, 2, 8)
+Overlay.BackgroundTransparency = 0.15
+Overlay.BorderSizePixel       = 0
+Overlay.ZIndex                = 1
 
+-- Card utama
 local Card = Instance.new("Frame", KeyGui)
 Card.Size = UDim2.new(0, 370, 0, 240)
-Card.Position         = UDim2.new(0.5, -180, 0.5, -100)
-Card.BackgroundColor3 = Color3.fromRGB(12, 12, 20)
+Card.Position         = UDim2.new(0.5, -185, 0.5, -120)
+Card.BackgroundColor3 = Color3.fromRGB(9, 9, 18)
 Card.BorderSizePixel  = 0
-Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 14)
-local CardStroke = Instance.new("UIStroke", Card)
-CardStroke.Color     = Color3.fromRGB(55, 55, 100)
-CardStroke.Thickness = 1.5
+Card.ZIndex           = 2
+Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 16)
 
-local CardPad = Instance.new("UIPadding", Card)
-CardPad.PaddingLeft   = UDim.new(0, 20)
-CardPad.PaddingRight  = UDim.new(0, 20)
-CardPad.PaddingTop    = UDim.new(0, 20)
-CardPad.PaddingBottom = UDim.new(0, 20)
+local Stroke = Instance.new("UIStroke", Card)
+Stroke.Color     = Color3.fromRGB(70, 70, 160)
+Stroke.Thickness = 1.5
 
-local CardLayout = Instance.new("UIListLayout", Card)
-CardLayout.Padding   = UDim.new(0, 10)
-CardLayout.SortOrder = Enum.SortOrder.LayoutOrder
+local Pad = Instance.new("UIPadding", Card)
+Pad.PaddingLeft   = UDim.new(0, 24)
+Pad.PaddingRight  = UDim.new(0, 24)
+Pad.PaddingTop    = UDim.new(0, 24)
+Pad.PaddingBottom = UDim.new(0, 24)
 
--- Logo + title
-local TitleL = Instance.new("TextLabel", Card)
-TitleL.Size               = UDim2.new(1, 0, 0, 28)
-TitleL.BackgroundTransparency = 1
-TitleL.Text               = "⚡ VertictHub"
-TitleL.TextColor3         = Color3.fromRGB(160, 160, 255)
-TitleL.TextSize           = 20
-TitleL.Font               = Enum.Font.GothamBold
-TitleL.TextXAlignment     = Enum.TextXAlignment.Center
-TitleL.LayoutOrder        = 0
+local Layout = Instance.new("UIListLayout", Card)
+Layout.Padding   = UDim.new(0, 10)
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
 
-local SubL = Instance.new("TextLabel", Card)
-SubL.Size               = UDim2.new(1, 0, 0, 16)
-SubL.BackgroundTransparency = 1
-SubL.Text               = "Masukkan key untuk melanjutkan"
-SubL.TextColor3         = Color3.fromRGB(100, 100, 130)
-SubL.TextSize           = 12
-SubL.Font               = Enum.Font.Gotham
-SubL.TextXAlignment     = Enum.TextXAlignment.Center
-SubL.LayoutOrder        = 1
+-- ── Helper buat elemen ────────────────────────────────────
+local function makeLabel(parent, text, size, color, order, bold)
+    local lbl = Instance.new("TextLabel", parent)
+    lbl.Size               = UDim2.new(1, 0, 0, size)
+    lbl.BackgroundTransparency = 1
+    lbl.Text               = text
+    lbl.TextColor3         = color
+    lbl.TextSize           = size
+    lbl.Font               = bold and Enum.Font.SourceSansBold or Enum.Font.SourceSans
+    lbl.TextXAlignment     = Enum.TextXAlignment.Center
+    lbl.LayoutOrder        = order
+    lbl.TextWrapped        = true
+    return lbl
+end
 
--- Input box
+local function makeBtn(parent, text, bgColor, textColor, order)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size             = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = bgColor
+    btn.BorderSizePixel  = 0
+    btn.Text             = text
+    btn.TextColor3       = textColor
+    btn.TextSize         = 13
+    btn.Font             = Enum.Font.SourceSansBold
+    btn.LayoutOrder      = order
+    btn.AutoButtonColor  = false -- [FIX] Handle hover manual biar lebih smooth
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+    return btn
+end
+
+-- ── Elemen GUI ────────────────────────────────────────────
+
+makeLabel(Card, "⚡ VertictHub", 22, Color3.fromRGB(150, 150, 255), 0, true)
+makeLabel(Card, "Verifikasi Key untuk melanjutkan", 12, Color3.fromRGB(90, 90, 120), 1, false)
+
+-- Separator
+local Sep = Instance.new("Frame", Card)
+Sep.Size             = UDim2.new(1, 0, 0, 1)
+Sep.BackgroundColor3 = Color3.fromRGB(40, 40, 80)
+Sep.BorderSizePixel  = 0
+Sep.LayoutOrder      = 2
+
+-- Input background
 local InputBg = Instance.new("Frame", Card)
-InputBg.Size             = UDim2.new(1, 0, 0, 38)
-InputBg.BackgroundColor3 = Color3.fromRGB(18, 18, 30)
+InputBg.Size             = UDim2.new(1, 0, 0, 42)
+InputBg.BackgroundColor3 = Color3.fromRGB(14, 14, 26)
 InputBg.BorderSizePixel  = 0
-InputBg.LayoutOrder      = 2
-Instance.new("UICorner", InputBg).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", InputBg).Color = Color3.fromRGB(45, 45, 80)
+InputBg.LayoutOrder      = 3
+Instance.new("UICorner", InputBg).CornerRadius = UDim.new(0, 10)
+local InputStroke = Instance.new("UIStroke", InputBg)
+InputStroke.Color = Color3.fromRGB(50, 50, 90)
 
 local KeyInput = Instance.new("TextBox", InputBg)
-KeyInput.Size               = UDim2.new(1, -16, 1, -10)
-KeyInput.Position           = UDim2.new(0, 8, 0, 5)
+KeyInput.Size               = UDim2.new(1, -20, 1, -10)
+KeyInput.Position           = UDim2.new(0, 10, 0, 5)
 KeyInput.BackgroundTransparency = 1
 KeyInput.Text               = ""
 KeyInput.PlaceholderText    = "VH-XXXXXX-XXXXXX-XXXXXX"
-KeyInput.PlaceholderColor3  = Color3.fromRGB(70, 70, 100)
-KeyInput.TextColor3         = Color3.fromRGB(200, 255, 200)
-KeyInput.TextSize           = 13
-KeyInput.Font               = Enum.Font.GothamMedium
+KeyInput.PlaceholderColor3  = Color3.fromRGB(60, 60, 100)
+KeyInput.TextColor3         = Color3.fromRGB(180, 255, 200)
+KeyInput.TextSize           = 14
+KeyInput.Font               = Enum.Font.SourceSans
 KeyInput.TextXAlignment     = Enum.TextXAlignment.Center
 KeyInput.ClearTextOnFocus   = false
 
--- Submit button
-local SubmitBtn = Instance.new("TextButton", Card)
-SubmitBtn.Size             = UDim2.new(1, 0, 0, 38)
-SubmitBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 130)
-SubmitBtn.BorderSizePixel  = 0
-SubmitBtn.Text             = "✅ Verifikasi Key"
-SubmitBtn.TextColor3       = Color3.fromRGB(220, 220, 255)
-SubmitBtn.TextSize         = 13
-SubmitBtn.Font             = Enum.Font.GothamBold
-SubmitBtn.LayoutOrder      = 3
-Instance.new("UICorner", SubmitBtn).CornerRadius = UDim.new(0, 8)
+local SubmitBtn = makeBtn(Card,
+    "✅  Verifikasi Key",
+    Color3.fromRGB(55, 55, 140),
+    Color3.fromRGB(210, 210, 255),
+    4
+)
 
--- Get key button
-local GetKeyBtn = Instance.new("TextButton", Card)
-GetKeyBtn.Size             = UDim2.new(1, 0, 0, 34)
-GetKeyBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
-GetKeyBtn.BorderSizePixel  = 0
-GetKeyBtn.Text             = "🔗 Belum punya key? Klik di sini"
-GetKeyBtn.TextColor3       = Color3.fromRGB(100, 100, 180)
-GetKeyBtn.TextSize         = 12
-GetKeyBtn.Font             = Enum.Font.Gotham
-GetKeyBtn.LayoutOrder      = 4
-Instance.new("UICorner", GetKeyBtn).CornerRadius = UDim.new(0, 8)
+local GetKeyBtn = makeBtn(Card,
+    "🔗  Belum punya key? Ambil di sini",
+    Color3.fromRGB(20, 20, 36),
+    Color3.fromRGB(90, 90, 180),
+    5
+)
 
--- Status label
-local StatusL = Instance.new("TextLabel", Card)
-StatusL.Size               = UDim2.new(1, 0, 0, 16)
-StatusL.BackgroundTransparency = 1
-StatusL.Text               = ""
-StatusL.TextColor3         = Color3.fromRGB(200, 100, 100)
-StatusL.TextSize           = 11
-StatusL.Font               = Enum.Font.Gotham
-StatusL.TextXAlignment     = Enum.TextXAlignment.Center
-StatusL.LayoutOrder        = 5
+local StatusL = makeLabel(Card, "", 11, Color3.fromRGB(200, 100, 100), 6, false)
+StatusL.TextWrapped = true
 
--- ── Logic ─────────────────────────────────────
+-- ── State & Logic ─────────────────────────────────────────
+
+local isBusy = false
 
 local function setStatus(msg, isOk)
     StatusL.Text       = msg
     StatusL.TextColor3 = isOk
-        and Color3.fromRGB(100, 220, 120)
-        or  Color3.fromRGB(220, 100, 100)
+        and Color3.fromRGB(80, 220, 120)
+        or  Color3.fromRGB(220, 90, 90)
 end
 
-local function checkKey(key)
-    setStatus("Memeriksa key...", true)
-    SubmitBtn.Active = false
-
-    local hwid = getHWID()
-    local ok, res = pcall(function()
-        return HttpService:JSONDecode(
-            game:HttpGet(API_BASE .. "/api/checkkey?key=" .. HttpService:UrlEncode(key) .. "&hwid=" .. HttpService:UrlEncode(hwid))
-        )
-    end)
-
-    SubmitBtn.Active = true
-
-    if not ok then
-        setStatus("❌ Gagal koneksi ke server", false)
-        return false
-    end
-
-    if res.valid then
-        local exp = res.expires and (" | Expires: " .. res.expires:sub(1,10)) or ""
-        local msg = res.bound and "✅ Key berhasil diaktifkan" .. exp or "✅ Key valid" .. exp
-        setStatus(msg, true)
-        saveKey(key)
-        task.wait(1)
-        KeyGui:Destroy()
-        return true
-    else
-        setStatus("❌ " .. (res.reason or "Key tidak valid"), false)
-        return false
-    end
+local function setBusy(state)
+    isBusy            = state
+    SubmitBtn.Active  = not state
+    SubmitBtn.BackgroundTransparency = state and 0.4 or 0
 end
 
--- Tombol get key — buka browser ke halaman Linkvertise
-GetKeyBtn.MouseButton1Click:Connect(function()
-    local hwid = getHWID()
-    local url  = API_BASE .. "/getkey?hwid=" .. HttpService:UrlEncode(hwid)
-    setStatus("Membuka browser...", true)
-    pcall(function() setclipboard(url) end)
-    setStatus("Link disalin! Buka di browser → selesaikan verifikasi → dapat key", true)
-end)
+local function doVerify(key)
+    if isBusy then return end
 
-SubmitBtn.MouseButton1Click:Connect(function()
-    local key = KeyInput.Text:gsub("%s+", ""):upper()
-    if #key < 5 then
-        setStatus("❌ Key terlalu pendek", false)
+    -- [FIX] Validasi format key di client sebelum kirim request
+    if not key:match("^VH%-[A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9]%-[A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9]%-[A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9]$") then
+        setStatus("❌ Format key salah — contoh: VH-A1B2C3-D4E5F6-G7H8I9", false)
         return
     end
-    checkKey(key)
+
+    setBusy(true)
+    setStatus("⏳ Memeriksa key...", true)
+
+    local hwid = getHWID()
+    local valid, msg = checkKeyAPI(key, hwid)
+
+    setBusy(false)
+
+    if valid then
+        setStatus(msg, true)
+        saveKey(key)
+        -- [FIX] Delay lebih lama biar user sempat baca konfirmasi
+        task.wait(1.8)
+        KeyGui:Destroy()
+    else
+        setStatus(msg, false)
+    end
+end
+
+-- Tombol submit
+SubmitBtn.MouseButton1Click:Connect(function()
+    local key = KeyInput.Text:gsub("%s+", ""):upper()
+    doVerify(key)
 end)
 
+-- Hover effect submit button
+SubmitBtn.MouseEnter:Connect(function()
+    if not isBusy then
+        SubmitBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 170)
+    end
+end)
+SubmitBtn.MouseLeave:Connect(function()
+    if not isBusy then
+        SubmitBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 140)
+    end
+end)
+
+-- Enter key di textbox
 KeyInput.FocusLost:Connect(function(enter)
     if enter then
         local key = KeyInput.Text:gsub("%s+", ""):upper()
-        if #key > 5 then checkKey(key) end
+        doVerify(key)
     end
 end)
 
--- ── Auto check key tersimpan ──────────────────
+-- Input focus highlight
+KeyInput.Focused:Connect(function()
+    InputStroke.Color = Color3.fromRGB(90, 90, 180)
+end)
+KeyInput.FocusLost:Connect(function()
+    InputStroke.Color = Color3.fromRGB(50, 50, 90)
+end)
 
-local function waitForKey()
+-- Tombol get key
+GetKeyBtn.MouseButton1Click:Connect(function()
+    local hwid = getHWID()
+    local username, userId = getPlayerInfo()
+    local url  = API_BASE .. "/getkey?hwid=" .. HttpService:UrlEncode(hwid)
+        .. "&username=" .. HttpService:UrlEncode(username)
+        .. "&userId=" .. HttpService:UrlEncode(userId)
+    local ok   = pcall(function() setclipboard(url) end)
+    if ok then
+        setStatus("✓ Link disalin! Buka di browser → verifikasi → dapat key", true)
+    else
+        setStatus("Buka link ini: " .. url, true)
+    end
+end)
+
+-- ── Auto check key tersimpan ──────────────────────────────
+
+task.spawn(function()
     local saved = loadKey()
     if saved and #saved > 5 then
         KeyInput.Text = saved
-        setStatus("Memeriksa key tersimpan...", true)
-        task.wait(0.5)
-        if checkKey(saved) then return end
+        setStatus("⏳ Memeriksa key tersimpan...", true)
+        task.wait(0.4)
+        doVerify(saved:upper())
     end
-    -- tunggu user submit
-    repeat task.wait(0.1) until not KeyGui.Parent or not KeyGui.Parent.Parent
-end
-
--- Jalankan key check — BLOCK eksekusi sampai valid
-local keyValid = false
-local thread = coroutine.create(function()
-    waitForKey()
-    keyValid = true
 end)
-coroutine.resume(thread)
 
--- Block sampai key valid atau GUI dihancurkan
-while not keyValid and KeyGui and KeyGui.Parent do
+-- ── BLOCK eksekusi sampai GUI dihancurkan (key valid) ─────
+while KeyGui and KeyGui.Parent do
     task.wait(0.1)
 end
 
--- Kalau GUI di-destroy paksa (key valid), lanjut ke script utama
--- =====================================================
--- TARUH SISA KODE SCRIPT DI BAWAH INI
--- =====================================================
+-- ============================================================
+-- ✅ KEY VALID — TARUH SISA KODE SCRIPT DI BAWAH INI
+-- ============================================================
