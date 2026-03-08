@@ -1,7 +1,28 @@
+import crypto from "crypto";
+
+const SECRET = process.env.TOKEN_SECRET || process.env.ADMIN_SECRET || "fallback-secret";
+
+function sign(data) {
+    return crypto.createHmac("sha256", SECRET).update(data).digest("hex").substring(0, 32);
+}
+
+function verifyToken(d, s) {
+    // Cek signature
+    if (!d || !s) return null;
+    const expected = sign(d);
+    if (expected !== s) return null;
+
+    // Decode payload
+    try {
+        const payload = JSON.parse(Buffer.from(d, "base64url").toString("utf8"));
+        // Cek expired
+        if (Date.now() > payload.exp) return null;
+        return payload;
+    } catch { return null; }
+}
+
 // GET /api/getkey?hwid=XXXX&username=XXXX&userId=XXXX
 // Returns { key, expires, reused }
-
-import crypto from "crypto";
 
 const GITHUB_TOKEN  = process.env.GITHUB_TOKEN;
 const GITHUB_REPO   = process.env.GITHUB_REPO;
@@ -51,23 +72,39 @@ export default async function handler(req, res) {
     if (req.method === "OPTIONS") return res.status(200).end();
     if (req.method !== "GET")    return res.status(405).json({ error: "Method not allowed" });
 
-    const hwid     = (req.query.hwid     || "").trim();
-    const username = (req.query.username || "").trim();
-    const userId   = (req.query.userId   || "").trim();
+    // Cek apakah pakai signed token (d + s) atau raw params
+    const d = req.query.d;
+    const s = req.query.s;
+
+    let hwid, username, userId;
+
+    if (d && s) {
+        // Verifikasi token
+        const payload = verifyToken(d, s);
+        if (!payload) {
+            return res.status(401).json({ error: "Token tidak valid atau sudah expired" });
+        }
+        hwid     = payload.hwid;
+        username = payload.username || "";
+        userId   = payload.userId   || "";
+    } else {
+        // Raw params - hanya boleh dari script (Roblox), browser harus pakai token
+        const userAgent = req.headers["user-agent"] || "";
+        const accept    = req.headers["accept"] || "";
+        const isBrowser = userAgent.includes("Mozilla") || userAgent.includes("Chrome") || userAgent.includes("Safari");
+        const isFetch   = accept.includes("application/json") || req.headers["x-requested-with"] === "XMLHttpRequest";
+
+        if (isBrowser && !isFetch) {
+            return res.status(400).json({ error: "Akses tidak valid. Gunakan link dari script." });
+        }
+
+        hwid     = (req.query.hwid     || "").trim();
+        username = (req.query.username || "").trim();
+        userId   = (req.query.userId   || "").trim();
+    }
 
     if (!hwid)             return res.status(400).json({ error: "HWID tidak boleh kosong" });
     if (hwid.length > 128) return res.status(400).json({ error: "HWID tidak valid" });
-
-    // Kalau dari browser (bukan fetch/script/HttpGet), redirect ke halaman web
-    const userAgent = req.headers["user-agent"] || "";
-    const accept    = req.headers["accept"] || "";
-    const isBrowser = userAgent.includes("Mozilla") || userAgent.includes("Chrome") || userAgent.includes("Safari");
-    const isScript  = userAgent.includes("Roblox") || userAgent.includes("vh-key") || req.headers["x-script"] === "1";
-    const isFetch   = accept.includes("application/json") || req.headers["x-requested-with"] === "XMLHttpRequest";
-    if (isBrowser && !isScript && !isFetch) {
-        const params = new URLSearchParams({ hwid, ...(username && {username}), ...(userId && {userId}) });
-        return res.redirect(302, `/?${params.toString()}`);
-    }
 
     try {
         // Load keys + config secara paralel
