@@ -58,12 +58,14 @@ export default async function handler(req, res) {
     if (!hwid)             return res.status(400).json({ error: "HWID tidak boleh kosong" });
     if (hwid.length > 128) return res.status(400).json({ error: "HWID tidak valid" });
 
-    // Kalau dari browser (bukan script/HttpGet), redirect ke halaman web
+    // Kalau dari browser (bukan fetch/script/HttpGet), redirect ke halaman web
     const userAgent = req.headers["user-agent"] || "";
+    const accept    = req.headers["accept"] || "";
     const isBrowser = userAgent.includes("Mozilla") || userAgent.includes("Chrome") || userAgent.includes("Safari");
     const isScript  = userAgent.includes("Roblox") || userAgent.includes("vh-key") || req.headers["x-script"] === "1";
-    if (isBrowser && !isScript) {
-        const params = new URLSearchParams({ hwid, username, userId });
+    const isFetch   = accept.includes("application/json") || req.headers["x-requested-with"] === "XMLHttpRequest";
+    if (isBrowser && !isScript && !isFetch) {
+        const params = new URLSearchParams({ hwid, ...(username && {username}), ...(userId && {userId}) });
         return res.redirect(302, `/?${params.toString()}`);
     }
 
