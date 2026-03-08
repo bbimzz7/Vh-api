@@ -51,8 +51,10 @@ export default async function handler(req, res) {
     if (req.method === "OPTIONS") return res.status(200).end();
     if (req.method !== "GET") return res.status(405).json({ valid: false, reason: "Method not allowed" });
 
-    const key  = (req.query.key  || "").trim().toUpperCase();
-    const hwid = (req.query.hwid || "").trim();
+    const key      = (req.query.key || "").trim().toUpperCase();
+    const hwid     = (req.query.hwid || "").trim();
+    const username = (req.query.username || "").trim();
+    const userId   = (req.query.userId || "").trim();
 
     if (!key)  return res.status(400).json({ valid: false, reason: "Key tidak boleh kosong" });
     if (!hwid) return res.status(400).json({ valid: false, reason: "HWID tidak boleh kosong" });
@@ -71,7 +73,9 @@ export default async function handler(req, res) {
 
         if (!entry.hwid) {
             keys[key].hwid    = hwid;
-            keys[key].boundAt = new Date().toISOString();
+            keys[key].username = username || null;
+            keys[key].userId   = userId || null;
+            keys[key].boundAt  = new Date().toISOString();
             await saveKeys(keys, sha);
             return res.json({ valid: true, expires: entry.expires, hwid, bound: true });
         }
