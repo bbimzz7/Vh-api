@@ -424,7 +424,9 @@ async function doGetKey() {
   try {
     const username = window._username || '';
     const userId   = window._userId   || '';
-    const res  = await fetch(`${API}/api/getkey?hwid=${encodeURIComponent(hwid)}&username=${encodeURIComponent(username)}&userId=${encodeURIComponent(userId)}`);
+    const res  = await fetch(`${API}/api/getkey?hwid=${encodeURIComponent(hwid)}&username=${encodeURIComponent(username)}&userId=${encodeURIComponent(userId)}`, {
+      headers: { "Accept": "application/json" }
+    });
     const data = await res.json();
     if (data.key) {
       document.getElementById('keyText').textContent = data.key;
