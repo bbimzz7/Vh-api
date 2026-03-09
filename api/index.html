@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ambil Key — VertictHub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0b0b0b;--s1:#111;--s2:#181818;--s3:#1f1f1f;
+  --ln:rgba(255,255,255,0.07);--ln2:rgba(255,255,255,0.12);--ln3:rgba(255,255,255,0.20);
+  --amb:#e8a020;--amb2:#f5b840;
+  --t:#f2f2f0;--t2:#8a8a88;--t3:#484848;
+  --g:#3ecf8e;--r:#f05050;--y:#f0c040;
+  --fD:'Chakra Petch',sans-serif;--fB:'DM Sans',sans-serif;--fM:'DM Mono',monospace;
+}
+html,body{min-height:100vh}
+body{background:var(--bg);color:var(--t);font-family:var(--fB);overflow-x:hidden;line-height:1.6}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:900;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px)}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:500;background:rgba(11,11,11,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--ln);padding:0 56px}
+.ni{max-width:800px;margin:0 auto;height:64px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.logo-img{width:30px;height:30px;border-radius:3px;border:1px solid var(--ln2);overflow:hidden}
+.logo-img img{width:100%;height:100%;object-fit:cover;display:block}
+.logo-text{font-family:var(--fD);font-size:16px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--t);line-height:1}
+.logo-text span{color:var(--amb)}
+.nav-back{font-family:var(--fB);font-size:13px;font-weight:600;color:var(--t2);text-decoration:none;display:flex;align-items:center;gap:7px;transition:color .15s}
+.nav-back:hover{color:var(--t)}
+.nav-back svg{width:14px;height:14px}
+
+/* PAGE */
+.page{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:96px 24px 80px}
+.wrap{width:100%;max-width:540px}
+
+/* PAGE HEAD */
+.phead{margin-bottom:36px;padding-bottom:28px;border-bottom:1px solid var(--ln)}
+.ptag{font-family:var(--fM);font-size:10px;font-weight:500;letter-spacing:4px;text-transform:uppercase;color:var(--amb);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.ptag::before{content:'//';color:var(--t3)}
+.ptitle{font-family:var(--fD);font-size:56px;font-weight:700;letter-spacing:-1px;text-transform:uppercase;line-height:.9;margin-bottom:10px}
+.psub{font-size:14px;font-weight:500;color:var(--t2);line-height:1.7}
+
+/* TABS */
+.tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--ln2);border-radius:3px;overflow:hidden;margin-bottom:22px}
+.tab{padding:12px;border:none;background:var(--s1);color:var(--t2);font-family:var(--fD);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s;border-right:1px solid var(--ln2)}
+.tab:last-child{border-right:none}
+.tab.on{background:var(--amb);color:#000}
+.tab:not(.on):hover{color:var(--t);background:var(--s2)}
+
+/* CARD */
+.card{background:var(--s1);border:1px solid var(--ln2);border-radius:3px;padding:26px;position:relative;overflow:hidden;margin-bottom:14px}
+.card::before{content:'';position:absolute;top:0;left:0;width:2px;height:100%;background:var(--amb);opacity:.5}
+
+/* FIELD */
+.flabel{font-family:var(--fM);font-size:10px;font-weight:500;letter-spacing:2.5px;text-transform:uppercase;color:var(--t3);margin-bottom:7px;display:block}
+
+/* HWID ROW */
+.hrow{display:flex;align-items:center;gap:12px;background:var(--s2);border:1px solid var(--ln);border-radius:3px;padding:13px 14px;margin-bottom:18px}
+.hicon{width:36px;height:36px;border:1px solid var(--ln2);border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hicon svg{width:17px;height:17px;stroke:var(--amb)}
+.hbody{flex:1;min-width:0}
+.hbody .flabel{margin-bottom:2px}
+.hval{font-family:var(--fM);font-size:12px;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcopy{font-family:var(--fM);font-size:10px;font-weight:500;background:transparent;border:1px solid var(--ln2);color:var(--t3);padding:5px 11px;border-radius:2px;cursor:pointer;transition:all .15s;flex-shrink:0}
+.hcopy:hover{color:var(--t);border-color:var(--ln3)}
+
+/* INPUT */
+.igroup{margin-bottom:18px}
+.ifield{width:100%;padding:12px 14px;background:var(--s2);border:1px solid var(--ln);border-radius:3px;color:var(--t);font-family:var(--fB);font-size:15px;font-weight:500;outline:none;transition:border-color .15s,box-shadow .15s}
+.ifield:focus{border-color:var(--amb);box-shadow:0 0 0 2px rgba(232,160,32,.1)}
+.ifield::placeholder{color:var(--t3)}
+.ifield:disabled{opacity:.4;cursor:not-allowed}
+
+/* NOTICE */
+.notice{display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border-radius:3px;font-size:13px;font-weight:500;line-height:1.65;margin-bottom:18px}
+.notice svg{width:14px;height:14px;flex-shrink:0;margin-top:2px}
+.n-info{background:rgba(232,160,32,.05);border:1px solid rgba(232,160,32,.14);color:var(--t2)}
+.n-warn{background:rgba(240,192,64,.06);border:1px solid rgba(240,192,64,.2);color:var(--y)}
+.n-err{background:rgba(240,80,80,.06);border:1px solid rgba(240,80,80,.2);color:var(--r)}
+.n-ok{background:rgba(62,207,142,.06);border:1px solid rgba(62,207,142,.2);color:var(--g)}
+
+/* BTN */
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:13px;border-radius:3px;border:none;font-family:var(--fD);font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s;text-decoration:none}
+.btn svg{width:15px;height:15px;flex-shrink:0}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-amb{background:var(--amb);color:#000;box-shadow:0 0 28px rgba(232,160,32,.14)}
+.btn-amb:hover:not(:disabled){background:var(--amb2)}
+.btn-out{background:transparent;color:var(--t2);border:1px solid var(--ln2)}
+.btn-out:hover:not(:disabled){color:var(--t);border-color:var(--ln3)}
+
+/* KEY RESULT */
+.kres{display:none;margin-top:18px;animation:up .4s cubic-bezier(.16,1,.3,1) both}
+.kbox{background:rgba(62,207,142,.05);border:1px solid rgba(62,207,142,.18);border-radius:3px;padding:26px;text-align:center;position:relative;margin-bottom:12px}
+.kbox::before{content:'';position:absolute;top:0;left:0;width:2px;height:100%;background:var(--g)}
+.klbl{font-family:var(--fM);font-size:9px;letter-spacing:4px;text-transform:uppercase;color:var(--t3);margin-bottom:14px}
+.kval{font-family:var(--fM);font-size:21px;font-weight:500;color:var(--g);letter-spacing:3px;word-break:break-all;margin-bottom:8px}
+.kexp{font-family:var(--fM);font-size:10px;color:var(--t3);margin-bottom:16px}
+.kcopy{display:inline-flex;align-items:center;gap:7px;background:rgba(62,207,142,.08);border:1px solid rgba(62,207,142,.2);color:var(--g);padding:8px 20px;border-radius:3px;font-family:var(--fM);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;letter-spacing:1px}
+.kcopy:hover{background:rgba(62,207,142,.14)}
+.kcopy svg{width:12px;height:12px}
+
+/* STATUS */
+.stat{font-family:var(--fM);font-size:11px;text-align:center;margin-top:12px;min-height:18px;color:var(--t2)}
+.stat.e{color:var(--r)}.stat.o{color:var(--g)}.stat.l{color:var(--amb)}
+
+/* FOOTER */
+.pfooter{text-align:center;margin-top:22px;display:flex;justify-content:center;gap:24px}
+.pfooter a{font-family:var(--fM);font-size:10px;color:var(--t3);text-decoration:none;letter-spacing:1px;transition:color .15s}
+.pfooter a:hover{color:var(--t2)}
+
+/* TOKEN ROWS */
+.trow{display:flex;align-items:center;gap:12px;background:var(--s2);border:1px solid var(--ln);border-radius:3px;padding:12px 14px;margin-bottom:10px}
+.trow-ico{width:30px;height:30px;border:1px solid var(--ln2);border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.trow-ico svg{width:14px;height:14px}
+
+@keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp{width:14px;height:14px;border-radius:50%;border:2px solid rgba(0,0,0,.2);border-top-color:#000;animation:spin .7s linear infinite}
+.sp.l{border-color:rgba(232,160,32,.2);border-top-color:var(--amb)}
+
+@media(max-width:640px){
+  nav{padding:0 20px}
+  .ptitle{font-size:42px}
+}
+</style>
+</head>
+<body>
+<nav>
+  <div class="ni">
+    <a class="logo" href="/">
+      <div class="logo-img"><img src="https://i.ibb.co.com/r2tHTs6k/file-00000000dac8720bac552ad433c9637d.jpg" alt="VH"></div>
+      <span class="logo-text">VERTIC<span>HUB</span></span>
+    </a>
+    <a class="nav-back" href="/">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      Kembali
+    </a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="wrap">
+    <div class="phead">
+      <div class="ptag">Key System</div>
+      <div class="ptitle">AMBIL<br>KEY</div>
+      <p class="psub">Key berlaku 24 jam. Satu perangkat hanya dapat memiliki satu key aktif dalam satu waktu.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab on" id="tBrowser" onclick="switchTab('browser')">BROWSER</button>
+      <button class="tab" id="tScript" onclick="switchTab('script')">SCRIPT</button>
+    </div>
+
+    <!-- BROWSER -->
+    <div id="pBrowser">
+      <div class="card">
+        <span class="flabel">Identitas Perangkat</span>
+        <div class="hrow">
+          <div class="hicon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="1"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <div class="hbody">
+            <span class="flabel">HWID Browser (Otomatis)</span>
+            <div class="hval" id="hwidDisplay">Mendeteksi...</div>
+          </div>
+          <button class="hcopy" id="hwidCopyBtn" onclick="copyHwid()">Salin</button>
+        </div>
+
+        <div class="notice n-info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>HWID ini unik per browser. Apabila browser diganti atau cookie dihapus, HWID dapat berubah. Satu HWID hanya dapat memiliki satu key aktif.</span>
+        </div>
+
+        <div class="igroup">
+          <label class="flabel" for="uInput">Username Roblox</label>
+          <input type="text" id="uInput" class="ifield" placeholder="Masukkan username Roblox Anda..." autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="notice n-warn" id="uWarn" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Pastikan username <strong>identik</strong> dengan username Roblox Anda. Perbedaan huruf kapital sekalipun akan menyebabkan verifikasi gagal.</span>
+        </div>
+
+        <button class="btn btn-amb" id="btnGK" onclick="doGetKey()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          Ambil Key Gratis
+        </button>
+
+        <div id="kRes" class="kres">
+          <div class="kbox">
+            <div class="klbl">Key Aktif</div>
+            <div id="kText" class="kval"></div>
+            <div id="kExp" class="kexp"></div>
+            <button class="kcopy" onclick="copyKey()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Salin Key
+            </button>
+          </div>
+        </div>
+        <div id="gkStat" class="stat"></div>
+      </div>
+      <div class="pfooter">
+        <a href="https://discord.gg/fVVZWMwmKG" target="_blank">Discord</a>
+        <a href="https://www.tiktok.com/@vhcomunity" target="_blank">TikTok</a>
+        <a href="/dashboard/">Admin</a>
+      </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <div id="pScript" style="display:none">
+      <div class="card">
+        <span class="flabel">Dari Script Lua</span>
+
+        <div id="tokPanel" style="display:none">
+          <div class="notice n-ok">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Data terenkripsi dari script berhasil diterima. Klik tombol di bawah untuk menerbitkan key.</span>
+          </div>
+          <div class="trow">
+            <div class="trow-ico" style="color:var(--amb)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div>
+              <span class="flabel">HWID (Terenkripsi)</span>
+              <div style="font-family:var(--fM);font-size:12px;color:var(--amb);font-weight:500">Terlindungi</div>
+            </div>
+          </div>
+          <div class="trow">
+            <div class="trow-ico" style="color:var(--g)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div>
+              <span class="flabel">Username Roblox</span>
+              <div id="tokUser" style="font-family:var(--fM);font-size:12px;color:var(--g);font-weight:500">—</div>
+            </div>
+          </div>
+          <button class="btn btn-amb" id="btnGKT" onclick="doGetKeyToken()" style="margin-top:8px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Generate Key Otomatis
+          </button>
+          <div id="gkStatT" class="stat"></div>
+          <div id="kResT" class="kres">
+            <div class="kbox">
+              <div class="klbl">Key Aktif</div>
+              <div id="kTextT" class="kval"></div>
+              <div id="kExpT" class="kexp"></div>
+              <button class="kcopy" onclick="copyKeyT()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Salin Key
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="noTok">
+          <div class="notice n-warn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>Halaman ini seharusnya dibuka melalui script Roblox yang secara otomatis menghasilkan tautan. Untuk pengambilan key manual, gunakan tab <strong>Browser</strong>.</span>
+          </div>
+          <button class="btn btn-out" onclick="switchTab('browser')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            Pindah ke Browser
+          </button>
+        </div>
+      </div>
+      <div class="pfooter">
+        <a href="https://discord.gg/fVVZWMwmKG" target="_blank">Discord</a>
+        <a href="https://www.tiktok.com/@vhcomunity" target="_blank">TikTok</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API=location.origin, P=new URLSearchParams(location.search), TD=P.get('d'), TS=P.get('s');
+
+function getBHWID(){
+  let id=null;try{id=localStorage.getItem('vh_bhwid')}catch(e){}
+  if(!id){
+    const n=navigator,s=screen;
+    const seed=[n.language,n.platform,s.colorDepth,s.width+'x'+s.height,n.hardwareConcurrency||4,new Date().getTimezoneOffset()].join('|');
+    let h=0;for(let i=0;i<seed.length;i++){h=((h<<5)-h)+seed.charCodeAt(i);h|=0;}
+    id='BR-'+Math.abs(h).toString(16).toUpperCase().padStart(8,'0')+'-'+Math.random().toString(36).substring(2,7).toUpperCase();
+    try{localStorage.setItem('vh_bhwid',id)}catch(e){}
+  }
+  return id;
+}
+const BHWID=getBHWID();
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('hwidDisplay').textContent=BHWID;
+  if(P.get('expired'))setStat('gkStat','Tautan telah kedaluwarsa. Minta tautan baru dari script.','e');
+  if(TD&&TS){
+    switchTab('script');
+    document.getElementById('noTok').style.display='none';
+    document.getElementById('tokPanel').style.display='block';
+    try{const pl=JSON.parse(atob(TD.replace(/-/g,'+').replace(/_/g,'/')));if(pl.username)document.getElementById('tokUser').textContent=pl.username;}catch(e){}
+  }
+  document.getElementById('uInput').addEventListener('input',()=>{
+    document.getElementById('uWarn').style.display=document.getElementById('uInput').value.trim().length>0?'flex':'none';
+  });
+});
+
+function switchTab(t){
+  document.getElementById('pBrowser').style.display=t==='browser'?'block':'none';
+  document.getElementById('pScript').style.display=t==='script'?'block':'none';
+  document.getElementById('tBrowser').classList.toggle('on',t==='browser');
+  document.getElementById('tScript').classList.toggle('on',t==='script');
+}
+function setStat(id,msg,cls=''){const el=document.getElementById(id);if(!el)return;el.textContent=msg;el.className='stat '+(cls||'')}
+function copyHwid(){
+  navigator.clipboard.writeText(BHWID).then(()=>{const b=document.getElementById('hwidCopyBtn');b.textContent='Tersalin';setTimeout(()=>b.textContent='Salin',1800);});
+}
+function showKey(cid,tid,eid,key,expires){
+  document.getElementById(tid).textContent=key;
+  document.getElementById(eid).textContent='Berlaku sampai: '+new Date(expires).toLocaleString('id-ID');
+  document.getElementById(cid).style.display='block';
+}
+function copyKeyEl(tid,btn){
+  navigator.clipboard.writeText(document.getElementById(tid).textContent).then(()=>{
+    btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Tersalin';
+    setTimeout(()=>btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Salin Key',2000);
+  });
+}
+function copyKey(){copyKeyEl('kText',document.querySelector('#kRes .kcopy'))}
+function copyKeyT(){copyKeyEl('kTextT',document.querySelector('#kResT .kcopy'))}
+
+async function doGetKey(){
+  const username=document.getElementById('uInput').value.trim();
+  if(!username){setStat('gkStat','Username Roblox wajib diisi.','e');document.getElementById('uInput').focus();return;}
+  const btn=document.getElementById('btnGK');
+  btn.disabled=true;btn.innerHTML='<div class="sp"></div> Memproses...';
+  setStat('gkStat','Menghubungi server...','l');
+  try{
+    const res=await fetch(`${API}/api/getkey?hwid=${encodeURIComponent(BHWID)}&username=${encodeURIComponent(username)}&source=browser`,{headers:{Accept:'application/json'}});
+    const d=await res.json();
+    if(d.key){
+      showKey('kRes','kText','kExp',d.key,d.expires);
+      btn.style.display='none';
+      document.getElementById('uInput').disabled=true;
+      document.getElementById('uWarn').style.display='none';
+      setStat('gkStat',d.reused?'Key Anda masih aktif.':'Key baru berhasil diterbitkan.','o');
+    }else{
+      setStat('gkStat',d.error||'Gagal mengambil key.','e');
+      btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> Ambil Key Gratis';
+    }
+  }catch(e){
+    setStat('gkStat','Kesalahan koneksi. Coba beberapa saat lagi.','e');
+    btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> Ambil Key Gratis';
+  }
+}
+
+async function doGetKeyToken(){
+  if(!TD||!TS)return;
+  const btn=document.getElementById('btnGKT');
+  btn.disabled=true;btn.innerHTML='<div class="sp"></div> Memproses...';
+  setStat('gkStatT','Menghubungi server...','l');
+  try{
+    const res=await fetch(`${API}/api/getkey?d=${encodeURIComponent(TD)}&s=${encodeURIComponent(TS)}`,{headers:{Accept:'application/json'}});
+    const d=await res.json();
+    if(d.key){
+      showKey('kResT','kTextT','kExpT',d.key,d.expires);
+      btn.style.display='none';
+      setStat('gkStatT',d.reused?'Key Anda masih aktif.':'Key baru berhasil diterbitkan.','o');
+    }else{
+      setStat('gkStatT',d.error||'Gagal mengambil key.','e');
+      btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Generate Key Otomatis';
+    }
+  }catch(e){
+    setStat('gkStatT','Kesalahan koneksi.','e');
+    btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Generate Key Otomatis';
+  }
+}
+</script>
+</body>
+</html>
