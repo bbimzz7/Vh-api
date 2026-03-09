@@ -143,8 +143,11 @@ export default async function handler(req, res) {
 
         // ── Cek blacklist HWID ────────────────────────────────
         const bl = blacklist || {};
-        if (bl[hwid]) {
-            const blEntry = bl[hwid];
+        // Cek hwid Roblox (mode script) DAN browserHwid (mode browser)
+        const hwidToCheck = finalSource === "browser" ? hwid : hwid; // hwid = browserHwid saat mode browser
+        for (const checkHwid of [hwid]) {
+            if (!checkHwid || !bl[checkHwid]) continue;
+            const blEntry = bl[checkHwid];
             const reason  = blEntry.reason || "Device kamu telah diblacklist";
             if (blEntry.expireAt) {
                 if (Date.now() < new Date(blEntry.expireAt).getTime()) {
@@ -161,25 +164,33 @@ export default async function handler(req, res) {
         const todayCount  = allKeys.filter(v => (v.createdAt || "").startsWith(today)).length;
         const totalActive = allKeys.filter(v => new Date(v.expires).getTime() > now).length;
 
-        // ── HWID sudah punya key aktif ────────────────────────
+        // ── Cek key aktif (batasi 1 key per username/hwid) ──────
         for (const [k, v] of Object.entries(keys)) {
             const stillActive = new Date(v.expires).getTime() > now;
             if (!stillActive) continue;
 
-            // Mode browser: cocokkan berdasarkan username (hwid browser tidak disimpan di record)
-            // Mode script:  cocokkan berdasarkan hwid dari Roblox
-            const isMatch = finalSource === "browser"
-                ? (v.username && username && v.username.toLowerCase() === username.toLowerCase())
-                : (v.hwid === hwid);
-
-            if (isMatch) {
-                // Update userId jika berubah
-                let updated = false;
-                if (userId && v.userId !== userId) { keys[k].userId = userId; updated = true; }
-                if (updated) {
-                    await withRetry(() => ghPut(GITHUB_FILE, keys, keysSha, "update userId"));
+            if (finalSource === "browser") {
+                // Mode browser: cek berdasarkan username
+                if (v.username && username && v.username.toLowerCase() === username.toLowerCase()) {
+                    return res.json({ key: k, expires: v.expires, reused: true, username: v.username });
                 }
-                return res.json({ key: k, expires: v.expires, reused: true, username: v.username });
+                // Cek juga berdasarkan browserHwid supaya 1 browser tidak bisa generate lewat username berbeda
+                if (v.browserHwid && v.browserHwid === hwid) {
+                    return res.status(403).json({
+                        error: `Browser ini sudah memiliki key aktif atas nama "${v.username}". Tunggu hingga expired atau hapus key lama.`
+                    });
+                }
+            } else {
+                // Mode script: cek berdasarkan hwid Roblox
+                if (v.hwid === hwid) {
+                    let updated = false;
+                    if (username && v.username !== username) { keys[k].username = username; updated = true; }
+                    if (userId   && v.userId   !== userId)   { keys[k].userId   = userId;   updated = true; }
+                    if (updated) {
+                        await withRetry(() => ghPut(GITHUB_FILE, keys, keysSha, "update username"));
+                    }
+                    return res.json({ key: k, expires: v.expires, reused: true, username: v.username });
+                }
             }
         }
 
@@ -197,17 +208,18 @@ export default async function handler(req, res) {
             do { key = generateKey(); } while (freshKeys[key]);
 
             const expires = new Date(now + KEY_EXPIRE_MS).toISOString();
-            // Mode browser: hwid dikosongkan dulu, akan diisi saat checkkey dari Roblox
+            // Mode browser: hwid Roblox kosong dulu (diisi saat checkkey), tapi browserHwid disimpan
             // Mode script:  hwid langsung dari Roblox
             const savedHwid = finalSource === "browser" ? null : hwid;
             freshKeys[key] = {
                 expires,
-                hwid:      savedHwid,
-                username:  username  || null,
-                userId:    userId    || null,
-                source:    finalSource,           // "browser" atau "script"
-                createdAt: new Date().toISOString(),
-                lastUsed:  null,
+                hwid:        savedHwid,
+                browserHwid: finalSource === "browser" ? hwid : null,
+                username:    username  || null,
+                userId:      userId    || null,
+                source:      finalSource,           // "browser" atau "script"
+                createdAt:   new Date().toISOString(),
+                lastUsed:    null,
             };
 
             await ghPut(GITHUB_FILE, freshKeys, freshSha, "generate key");

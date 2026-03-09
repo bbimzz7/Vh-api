@@ -83,17 +83,20 @@ export default async function handler(req, res) {
                 ghGet(CONFIG_FILE),
                 ghGet(BLACKLIST_FILE),
             ]);
+            const bl2 = blacklist || {};
             const list = Object.entries(keys).map(([k, v]) => ({
-                key:       k,
-                expires:   v.expires,
-                expired:   new Date(v.expires).getTime() < now,
-                hwid:      v.hwid      || null,
-                username:  v.username  || null,
-                userId:    v.userId    || null,
-                boundAt:   v.boundAt   || null,
-                createdAt: v.createdAt || null,
-                lastUsed:  v.lastUsed  || null,
-                blacklisted: !!(blacklist || {})[v.hwid],
+                key:         k,
+                expires:     v.expires,
+                expired:     new Date(v.expires).getTime() < now,
+                hwid:        v.hwid        || null,
+                browserHwid: v.browserHwid || null,
+                username:    v.username    || null,
+                userId:      v.userId      || null,
+                source:      v.source      || "script",
+                boundAt:     v.boundAt     || null,
+                createdAt:   v.createdAt   || null,
+                lastUsed:    v.lastUsed    || null,
+                blacklisted: !!(bl2[v.hwid] || (v.browserHwid && bl2[v.browserHwid])),
             }));
             const total       = list.length;
             const active      = list.filter(x => !x.expired).length;
