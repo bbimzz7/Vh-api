@@ -426,6 +426,21 @@ tbody tr:last-child td{border-bottom:none}
 </div>
 
 <script>
+
+// ── Format tanggal ke WIB ─────────────────────────────────
+function fmtWIB(iso, showTime) {
+  if(!iso) return '—';
+  const d = new Date(iso);
+  const wib = new Date(d.getTime() + 7*60*60*1000);
+  const dd = wib.toISOString();
+  if(showTime) return dd.substring(0,10) + ' ' + dd.substring(11,16) + ' WIB';
+  return dd.substring(0,10);
+}
+function fmtWIBFull(iso) {
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('id-ID', {timeZone:'Asia/Jakarta', day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) + ' WIB';
+}
 const API=location.origin;
 let _sec='',_keys=[],_fil='all',_sc='createdAt',_sd=-1,_ek='',_dm=null;
 
@@ -501,8 +516,8 @@ function renderTbl(){
       <td style="font-family:var(--fM);font-size:11px">${k.username||'<span style="color:var(--t3)">—</span>'}</td>
       <td><span class="badge bm">${k.source||'script'}</span></td>
       <td style="font-family:var(--fM);font-size:10px;color:var(--t2)" title="${k.hwid||''}">${k.hwid?hs:'<span style="color:var(--t3)">Bebas</span>'}</td>
-      <td style="font-family:var(--fM);font-size:11px;color:${k.expired?'var(--r)':'var(--t)'}">${(k.expires||'').substring(0,10)||'—'}</td>
-      <td style="font-family:var(--fM);font-size:11px;color:var(--t2)">${(k.createdAt||'').substring(0,10)||'—'}</td>
+      <td style="font-family:var(--fM);font-size:11px;color:${k.expired?'var(--r)':'var(--t)'}">${fmtWIB(k.expires)}</td>
+      <td style="font-family:var(--fM);font-size:11px;color:var(--t2)">${fmtWIB(k.createdAt)}</td>
       <td style="white-space:nowrap" onclick="event.stopPropagation()">
         <button class="ab e" onclick="openExt('${ke}','${k.expires||''}')">+Hari</button>
         <button class="ab rs" onclick="doRst('${ke}')">Reset</button>
@@ -537,7 +552,7 @@ async function doRst(key){
   try{const res=await fetch(`${API}/api/dashboard`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:_sec,action:'resethwid',key})});const d=await res.json();if(d.success){setDS('HWID direset.','o');loadKeys();}else setDS(d.error||'Gagal.','e');}
   catch(e){setDS('Kesalahan koneksi.','e');}
 }
-function openExt(k,exp){_ek=k;document.getElementById('extKey').textContent=k;document.getElementById('extExp').textContent=exp?exp.substring(0,10):'—';document.getElementById('extDays').value=1;document.getElementById('extModal').classList.add('on');}
+function openExt(k,exp){_ek=k;document.getElementById('extKey').textContent=k;document.getElementById('extExp').textContent=exp?fmtWIB(exp):'—';document.getElementById('extDays').value=1;document.getElementById('extModal').classList.add('on');}
 function closeExt(){document.getElementById('extModal').classList.remove('on')}
 async function doExt(){
   const d=parseInt(document.getElementById('extDays').value)||1;
@@ -555,7 +570,7 @@ function openDet(key){
   document.getElementById('dm-bhrow').style.display=k.source==='browser'&&k.browserHwid?'block':'none';
   document.getElementById('dm-un').textContent=k.username||'—';
   document.getElementById('dm-src').textContent=k.source||'script';
-  document.getElementById('dm-exp').textContent=k.expires?k.expires.substring(0,16).replace('T',' '):'—';
+  document.getElementById('dm-exp').textContent=fmtWIB(k.expires, true);
   const st=document.getElementById('dm-st');st.textContent=k.expired?'Expired':'Aktif';st.style.color=k.expired?'var(--r)':'var(--g)';
   document.getElementById('dm-blw').style.display='none';
   document.getElementById('dm-blr').value='';document.getElementById('dm-bld').value='0';document.getElementById('dm-bls').textContent='';
@@ -596,14 +611,14 @@ async function loadLogs(){
 function renderLogs(logs){
   if(!logs.length){document.getElementById('logList').innerHTML='<div class="empty">Belum ada aktivitas.</div>';return;}
   const tc={delete:'lt-del',genkey:'lt-gen',extend:'lt-ext',resethwid:'lt-rst',bulkdelete:'lt-del',blacklist:'lt-bl',unblacklist:'lt-ubl'};
-  document.getElementById('logList').innerHTML=logs.map(l=>`<div class="li"><div class="lts">${new Date(l.ts).toLocaleString('id-ID')}</div><div class="la"><span class="lt ${tc[l.action]||'lt-def'}">${l.action}</span>${l.detail||''}</div></div>`).join('');
+  document.getElementById('logList').innerHTML=logs.map(l=>`<div class="li"><div class="lts">${fmtWIBFull(l.ts)}</div><div class="la"><span class="lt ${tc[l.action]||'lt-def'}">${l.action}</span>${l.detail||''}</div></div>`).join('');
 }
 function buildChart(){
   if(!_keys.length)return;
   const canvas=document.getElementById('myChart'),ctx=canvas.getContext('2d');
   const labels=[],counts=[];
-  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);labels.push(d.toLocaleDateString('id-ID',{weekday:'short',day:'numeric'}));counts.push(_keys.filter(k=>(k.createdAt||'').startsWith(d.toISOString().substring(0,10))).length);}
-  const today=new Date().toISOString().substring(0,10);
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);labels.push(d.toLocaleDateString('id-ID',{timeZone:'Asia/Jakarta',weekday:'short',day:'numeric'}));const ds=fmtWIB(d.toISOString());counts.push(_keys.filter(k=>fmtWIB(k.createdAt)===ds).length);}
+  const today=fmtWIB(new Date().toISOString());
   document.getElementById('ch-today').textContent=_keys.filter(k=>(k.createdAt||'').startsWith(today)).length;
   document.getElementById('ch-week').textContent=counts.reduce((a,b)=>a+b,0);
   const pct=_keys.length?Math.round(_keys.filter(k=>!k.expired).length/_keys.length*100):0;
@@ -637,7 +652,7 @@ async function loadBL(){
 function renderBL(list){
   const el=document.getElementById('blList');
   if(!list.length){el.innerHTML='<div class="empty">Tidak ada HWID yang diblacklist.</div>';return;}
-  el.innerHTML=`<div class="tw"><table><thead><tr><th>HWID</th><th>Alasan</th><th>Durasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${list.map(b=>{const ip=!b.expireAt,ie=b.expired,es=ip?'Permanent':ie?'Kedaluwarsa':b.expireAt.substring(0,10),sb=ie?`<span style="color:var(--t3);font-size:10px;font-family:var(--fM)">Kedaluwarsa</span>`:ip?`<span style="color:var(--r);font-size:10px;font-family:var(--fM)">Permanent</span>`:`<span style="color:var(--y);font-size:10px;font-family:var(--fM)">Sementara</span>`;return `<tr><td style="font-family:var(--fM);font-size:11px;color:var(--amb)" title="${b.hwid}">${b.hwid.substring(0,20)}${b.hwid.length>20?'…':''}</td><td style="font-size:12px">${b.reason}</td><td style="font-family:var(--fM);font-size:11px;color:var(--t2)">${es}</td><td>${sb}</td><td><button onclick="doUnBL('${b.hwid}')" class="ab" style="color:var(--g);border-color:rgba(62,207,142,.3)">Hapus</button></td></tr>`;}).join('')}</tbody></table></div>`;
+  el.innerHTML=`<div class="tw"><table><thead><tr><th>HWID</th><th>Alasan</th><th>Durasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${list.map(b=>{const ip=!b.expireAt,ie=b.expired,es=ip?'Permanent':ie?'Kedaluwarsa':fmtWIB(b.expireAt),sb=ie?`<span style="color:var(--t3);font-size:10px;font-family:var(--fM)">Kedaluwarsa</span>`:ip?`<span style="color:var(--r);font-size:10px;font-family:var(--fM)">Permanent</span>`:`<span style="color:var(--y);font-size:10px;font-family:var(--fM)">Sementara</span>`;return `<tr><td style="font-family:var(--fM);font-size:11px;color:var(--amb)" title="${b.hwid}">${b.hwid.substring(0,20)}${b.hwid.length>20?'…':''}</td><td style="font-size:12px">${b.reason}</td><td style="font-family:var(--fM);font-size:11px;color:var(--t2)">${es}</td><td>${sb}</td><td><button onclick="doUnBL('${b.hwid}')" class="ab" style="color:var(--g);border-color:rgba(62,207,142,.3)">Hapus</button></td></tr>`;}).join('')}</tbody></table></div>`;
 }
 async function doBlacklist(){
   const h=(document.getElementById('blHwid').value||'').trim(),r=(document.getElementById('blReason').value||'').trim(),d=parseInt(document.getElementById('blDays').value)||0,s=document.getElementById('blStat');
