@@ -1,19 +1,21 @@
 // /api/dashboard.js
-const GITHUB_TOKEN  = process.env.GITHUB_TOKEN;
-const GITHUB_REPO   = process.env.GITHUB_REPO;
-const GITHUB_FILE   = process.env.GITHUB_FILE;
-const LOG_FILE      = process.env.GITHUB_LOG_FILE   || "logs.json";
-const CONFIG_FILE   = process.env.GITHUB_CONFIG_FILE || "config.json";
-const ADMIN_SECRET  = process.env.ADMIN_SECRET;
+const GITHUB_TOKEN   = process.env.GITHUB_TOKEN;
+const GITHUB_REPO    = process.env.GITHUB_REPO;
+const GITHUB_FILE    = process.env.GITHUB_FILE;
+const LOG_FILE       = process.env.GITHUB_LOG_FILE      || "logs.json";
+const CONFIG_FILE    = process.env.GITHUB_CONFIG_FILE   || "config.json";
+const BLACKLIST_FILE = process.env.GITHUB_BLACKLIST_FILE || "blacklist.json";
+const ADMIN_SECRET   = process.env.ADMIN_SECRET;
 
 import crypto from "crypto";
 
+// ── GitHub helpers ────────────────────────────────────────────
 async function ghGet(file) {
     const res = await fetch(
         `https://api.github.com/repos/${GITHUB_REPO}/contents/${file}`,
         { headers: { Authorization: `token ${GITHUB_TOKEN}`, "User-Agent": "vh-key-api", "Cache-Control": "no-cache" } }
     );
-    if (!res.ok) return { data: file.endsWith(".json") ? (file === LOG_FILE ? [] : {}) : {}, sha: null };
+    if (!res.ok) return { data: file === LOG_FILE ? [] : {}, sha: null };
     const json = await res.json();
     const content = JSON.parse(Buffer.from(json.content, "base64").toString("utf8"));
     return { data: content, sha: json.sha };
@@ -71,41 +73,43 @@ export default async function handler(req, res) {
     const action = req.method === "GET" ? req.query.action : (req.body || {}).action;
 
     try {
-        const now = Date.now();
+        const now   = Date.now();
         const today = new Date().toISOString().substring(0, 10);
 
-        // ── LIST ──────────────────────────────────────────
+        // ── LIST ──────────────────────────────────────────────
         if (action === "list") {
-            const [{ data: keys }, { data: config }] = await Promise.all([
+            const [{ data: keys }, { data: config }, { data: blacklist }] = await Promise.all([
                 ghGet(GITHUB_FILE),
                 ghGet(CONFIG_FILE),
+                ghGet(BLACKLIST_FILE),
             ]);
             const list = Object.entries(keys).map(([k, v]) => ({
                 key:       k,
                 expires:   v.expires,
                 expired:   new Date(v.expires).getTime() < now,
-                hwid:      v.hwid    || null,
-                username:  v.username || null,
-                userId:    v.userId   || null,
-                boundAt:   v.boundAt  || null,
+                hwid:      v.hwid      || null,
+                username:  v.username  || null,
+                userId:    v.userId    || null,
+                boundAt:   v.boundAt   || null,
                 createdAt: v.createdAt || null,
                 lastUsed:  v.lastUsed  || null,
+                blacklisted: !!(blacklist || {})[v.hwid],
             }));
-            const total      = list.length;
-            const active     = list.filter(x => !x.expired).length;
-            const expired    = list.filter(x => x.expired).length;
-            const bound      = list.filter(x => x.hwid).length;
-            const todayCount = list.filter(x => (x.createdAt||'').startsWith(today)).length;
+            const total       = list.length;
+            const active      = list.filter(x => !x.expired).length;
+            const expired     = list.filter(x => x.expired).length;
+            const bound       = list.filter(x => x.hwid).length;
+            const todayCount  = list.filter(x => (x.createdAt||"").startsWith(today)).length;
             return res.json({ keys: list, stats: { total, active, expired, bound, todayCount }, config });
         }
 
-        // ── GET CONFIG ────────────────────────────────────
+        // ── GET CONFIG ────────────────────────────────────────
         if (action === "getconfig") {
             const { data: config } = await ghGet(CONFIG_FILE);
             return res.json({ config });
         }
 
-        // ── SAVE CONFIG ───────────────────────────────────
+        // ── SAVE CONFIG ───────────────────────────────────────
         if (action === "saveconfig") {
             const { maxPerDay, maxTotal } = req.body || {};
             const { data: config, sha } = await ghGet(CONFIG_FILE);
@@ -116,13 +120,13 @@ export default async function handler(req, res) {
             return res.json({ success: true, config });
         }
 
-        // ── LOGS ──────────────────────────────────────────
+        // ── LOGS ──────────────────────────────────────────────
         if (action === "logs") {
             const { data: logs } = await ghGet(LOG_FILE);
             return res.json({ logs: Array.isArray(logs) ? logs : [] });
         }
 
-        // ── DELETE ────────────────────────────────────────
+        // ── DELETE ────────────────────────────────────────────
         if (action === "delete") {
             const key = (req.body.key || "").toUpperCase();
             const { data: keys, sha } = await ghGet(GITHUB_FILE);
@@ -133,7 +137,7 @@ export default async function handler(req, res) {
             return res.json({ success: true });
         }
 
-        // ── BULK DELETE EXPIRED ───────────────────────────
+        // ── BULK DELETE EXPIRED ───────────────────────────────
         if (action === "bulkdelete") {
             const { data: keys, sha } = await ghGet(GITHUB_FILE);
             let count = 0;
@@ -145,7 +149,7 @@ export default async function handler(req, res) {
             return res.json({ success: true, deleted: count });
         }
 
-        // ── RESET HWID ────────────────────────────────────
+        // ── RESET HWID ────────────────────────────────────────
         if (action === "resethwid") {
             const key = (req.body.key || "").toUpperCase();
             const { data: keys, sha } = await ghGet(GITHUB_FILE);
@@ -157,7 +161,7 @@ export default async function handler(req, res) {
             return res.json({ success: true });
         }
 
-        // ── EXTEND ────────────────────────────────────────
+        // ── EXTEND ────────────────────────────────────────────
         if (action === "extend") {
             const key  = (req.body.key || "").toUpperCase();
             const days = Math.min(Math.max(parseInt(req.body.days) || 1, 1), 365);
@@ -170,7 +174,7 @@ export default async function handler(req, res) {
             return res.json({ success: true, expires: keys[key].expires });
         }
 
-        // ── GENERATE KEY ──────────────────────────────────
+        // ── GENERATE KEY ──────────────────────────────────────
         if (action === "genkey") {
             const count      = Math.min(Math.max(parseInt(req.body.count) || 1, 1), 50);
             const expireDays = Math.min(Math.max(parseInt(req.body.expireDays) || 1, 1), 365);
@@ -181,12 +185,62 @@ export default async function handler(req, res) {
             for (let i = 0; i < count; i++) {
                 let key;
                 do { key = generateKey(); } while (keys[key]);
-                keys[key] = { expires, hwid: null, createdAt: new Date().toISOString() };
+                keys[key] = { expires, hwid: null, createdAt: new Date().toISOString(), lastUsed: null };
                 generated.push(key);
             }
             await ghPut(GITHUB_FILE, keys, sha, "generate keys");
             addLog("genkey", `${count} key, ${expireDays} hari`);
             return res.json({ success: true, keys: generated, expires, expireDays });
+        }
+
+        // ── BLACKLIST HWID ────────────────────────────────────
+        if (action === "blacklist") {
+            const hwid      = (req.body.hwid   || "").trim();
+            const reason    = (req.body.reason || "Diblacklist oleh admin").trim();
+            const days      = parseInt(req.body.days) || 0; // 0 = permanent
+            if (!hwid) return res.json({ error: "HWID tidak boleh kosong" });
+            if (hwid.length > 128) return res.json({ error: "HWID tidak valid" });
+
+            const { data: bl, sha } = await ghGet(BLACKLIST_FILE);
+            const blObj = bl || {};
+            blObj[hwid] = {
+                reason,
+                blacklistedAt: new Date().toISOString(),
+                expireAt: days > 0 ? new Date(now + days * 24 * 60 * 60 * 1000).toISOString() : null,
+                days: days || "permanent",
+            };
+            await ghPut(BLACKLIST_FILE, blObj, sha, `blacklist hwid${days ? ` ${days}d` : " permanent"}`);
+            addLog("blacklist", `HWID ${hwid} diblacklist — ${reason}${days ? ` (${days} hari)` : " (permanent)"}`);
+            return res.json({ success: true, hwid, expireAt: blObj[hwid].expireAt });
+        }
+
+        // ── UNBLACKLIST HWID ──────────────────────────────────
+        if (action === "unblacklist") {
+            const hwid = (req.body.hwid || "").trim();
+            if (!hwid) return res.json({ error: "HWID tidak boleh kosong" });
+
+            const { data: bl, sha } = await ghGet(BLACKLIST_FILE);
+            const blObj = bl || {};
+            if (!blObj[hwid]) return res.json({ error: "HWID tidak ada di blacklist" });
+            delete blObj[hwid];
+            await ghPut(BLACKLIST_FILE, blObj, sha, "unblacklist hwid");
+            addLog("unblacklist", `HWID ${hwid} dihapus dari blacklist`);
+            return res.json({ success: true });
+        }
+
+        // ── LIST BLACKLIST ────────────────────────────────────
+        if (action === "listblacklist") {
+            const { data: bl } = await ghGet(BLACKLIST_FILE);
+            const blObj = bl || {};
+            const list = Object.entries(blObj).map(([hwid, v]) => ({
+                hwid,
+                reason:        v.reason        || "-",
+                blacklistedAt: v.blacklistedAt || null,
+                expireAt:      v.expireAt      || null,
+                days:          v.days          || "permanent",
+                expired:       v.expireAt ? new Date(v.expireAt).getTime() < now : false,
+            }));
+            return res.json({ blacklist: list });
         }
 
         return res.status(400).json({ error: "Unknown action" });
