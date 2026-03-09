@@ -8,6 +8,18 @@ const CONFIG_FILE    = process.env.GITHUB_CONFIG_FILE    || "config.json";
 const BLACKLIST_FILE = process.env.GITHUB_BLACKLIST_FILE || "blacklist.json";
 const KEY_EXPIRE_MS  = 24 * 60 * 60 * 1000; // 24 jam
 
+
+// ── Timezone WIB (UTC+7) helpers ─────────────────────────
+function toWIB(date) {
+    // Tambah 7 jam ke UTC
+    return new Date(date.getTime() + 7 * 60 * 60 * 1000);
+}
+function todayWIB() {
+    return toWIB(new Date()).toISOString().substring(0, 10);
+}
+function nowISOWIB() {
+    return toWIB(new Date()).toISOString().replace('T', ' ').substring(0, 19) + ' WIB';
+}
 function sign(data) {
     return crypto.createHmac("sha256", SECRET).update(data).digest("hex").substring(0, 32);
 }
@@ -133,7 +145,7 @@ export default async function handler(req, res) {
 
     try {
         const now   = Date.now();
-        const today = new Date().toISOString().substring(0, 10);
+        const today = todayWIB();
 
         const [{ data: keys, sha: keysSha }, { data: config }, { data: blacklist }] = await Promise.all([
             ghGet(GITHUB_FILE),

@@ -9,6 +9,18 @@ const ADMIN_SECRET   = process.env.ADMIN_SECRET;
 
 import crypto from "crypto";
 
+
+// ── Timezone WIB (UTC+7) helpers ─────────────────────────
+function toWIB(date) {
+    // Tambah 7 jam ke UTC
+    return new Date(date.getTime() + 7 * 60 * 60 * 1000);
+}
+function todayWIB() {
+    return toWIB(new Date()).toISOString().substring(0, 10);
+}
+function nowISOWIB() {
+    return toWIB(new Date()).toISOString().replace('T', ' ').substring(0, 19) + ' WIB';
+}
 // ── GitHub helpers ────────────────────────────────────────────
 async function ghGet(file) {
     const res = await fetch(
@@ -74,7 +86,7 @@ export default async function handler(req, res) {
 
     try {
         const now   = Date.now();
-        const today = new Date().toISOString().substring(0, 10);
+        const today = todayWIB();
 
         // ── LIST ──────────────────────────────────────────────
         if (action === "list") {
