@@ -315,7 +315,7 @@ function copyHwid(){
 }
 function showKey(cid,tid,eid,key,expires){
   document.getElementById(tid).textContent=key;
-  document.getElementById(eid).textContent='Berlaku sampai: '+new Date(expires).toLocaleString('id-ID');
+  document.getElementById(eid).textContent='Berlaku sampai: '+new Date(expires).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+ ' WIB';
   document.getElementById(cid).style.display='block';
 }
 function copyKeyEl(tid,btn){
