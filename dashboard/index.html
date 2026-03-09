@@ -388,10 +388,17 @@ tbody tr:last-child td{border-bottom:none}
       </div>
     </div>
     <div style="margin-bottom:11px">
-      <label class="flabel">HWID</label>
+      <label class="flabel">HWID Roblox</label>
       <div style="display:flex;align-items:center;gap:8px">
         <div id="dm-hwid" style="font-family:var(--fM);font-size:11px;color:var(--t);word-break:break-all;flex:1;background:var(--s2);border:1px solid var(--ln);border-radius:3px;padding:7px 10px;min-height:34px"></div>
         <button onclick="dmCp('dm-hwid')" style="flex-shrink:0;background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.22);color:var(--amb);padding:4px 9px;border-radius:2px;cursor:pointer;font-size:10px;font-family:var(--fM)">Salin</button>
+      </div>
+    </div>
+    <div id="dm-bhrow" style="margin-bottom:11px">
+      <label class="flabel">HWID Browser</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="dm-bhwid" style="font-family:var(--fM);font-size:11px;color:var(--amb);word-break:break-all;flex:1;background:var(--s2);border:1px solid var(--ln);border-radius:3px;padding:7px 10px;min-height:34px"></div>
+        <button onclick="dmCp('dm-bhwid')" style="flex-shrink:0;background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.22);color:var(--amb);padding:4px 9px;border-radius:2px;cursor:pointer;font-size:10px;font-family:var(--fM)">Salin</button>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px">
@@ -411,7 +418,8 @@ tbody tr:last-child td{border-bottom:none}
     </div>
     <div class="mac" style="flex-wrap:wrap;gap:6px">
       <button class="btn btn-out" onclick="closeDet()" style="flex:1;min-width:70px">Tutup</button>
-      <button id="dm-btnbl" onclick="togBLF()" style="flex:1;min-width:70px;background:rgba(240,80,80,.08);border:1px solid rgba(240,80,80,.25);color:var(--r);border-radius:3px;padding:10px;cursor:pointer;font-size:12px;font-family:var(--fD);letter-spacing:1px;font-weight:700;text-transform:uppercase">Blacklist</button>
+      <button id="dm-btnbl" onclick="togBLF('roblox')" style="flex:1;min-width:70px;background:rgba(240,80,80,.08);border:1px solid rgba(240,80,80,.25);color:var(--r);border-radius:3px;padding:10px;cursor:pointer;font-size:12px;font-family:var(--fD);letter-spacing:1px;font-weight:700;text-transform:uppercase">BL Roblox</button>
+      <button id="dm-btnblb" onclick="togBLF('browser')" style="flex:1;min-width:70px;background:rgba(240,80,80,.06);border:1px solid rgba(240,80,80,.2);color:var(--r);border-radius:3px;padding:10px;cursor:pointer;font-size:12px;font-family:var(--fD);letter-spacing:1px;font-weight:700;text-transform:uppercase">BL Browser</button>
       <button id="dm-btnrst" onclick="dmRst()" style="flex:1;min-width:70px;background:rgba(232,160,32,.07);border:1px solid rgba(232,160,32,.2);color:var(--amb);border-radius:3px;padding:10px;cursor:pointer;font-size:12px;font-family:var(--fD);letter-spacing:1px;font-weight:700;text-transform:uppercase">Reset HWID</button>
     </div>
   </div>
@@ -538,30 +546,44 @@ async function doExt(){
 }
 document.getElementById('extModal').addEventListener('click',function(e){if(e.target===this)closeExt()});
 
+let _blTarget='roblox';
 function openDet(key){
   const k=_keys.find(x=>x.key===key);if(!k)return;_dm=k;
   document.getElementById('dm-key').textContent=k.key;
   document.getElementById('dm-hwid').textContent=k.hwid||'— Belum terhubung —';
+  document.getElementById('dm-bhwid').textContent=k.browserHwid||'—';
+  document.getElementById('dm-bhrow').style.display=k.source==='browser'&&k.browserHwid?'block':'none';
   document.getElementById('dm-un').textContent=k.username||'—';
   document.getElementById('dm-src').textContent=k.source||'script';
   document.getElementById('dm-exp').textContent=k.expires?k.expires.substring(0,16).replace('T',' '):'—';
   const st=document.getElementById('dm-st');st.textContent=k.expired?'Expired':'Aktif';st.style.color=k.expired?'var(--r)':'var(--g)';
   document.getElementById('dm-blw').style.display='none';
   document.getElementById('dm-blr').value='';document.getElementById('dm-bld').value='0';document.getElementById('dm-bls').textContent='';
-  document.getElementById('dm-btnbl').textContent='Blacklist';
+  document.getElementById('dm-btnbl').textContent='BL Roblox';
+  document.getElementById('dm-btnbl').style.display=k.hwid?'flex':'none';
+  document.getElementById('dm-btnblb').style.display=(k.source==='browser'&&k.browserHwid)?'flex':'none';
   document.getElementById('dm-btnrst').style.display=k.hwid?'block':'none';
   document.getElementById('detModal').classList.add('on');
 }
 function closeDet(){document.getElementById('detModal').classList.remove('on');_dm=null;}
-function togBLF(){const w=document.getElementById('dm-blw');const o=w.style.display!=='none';w.style.display=o?'none':'block';document.getElementById('dm-btnbl').textContent=o?'Blacklist':'Batal';if(!o)document.getElementById('dm-blr').focus();}
+function togBLF(target){
+  _blTarget=target||'roblox';
+  const w=document.getElementById('dm-blw');
+  const o=w.style.display!=='none';
+  w.style.display=o?'none':'block';
+  const lbl=o?(_blTarget==='browser'?'BL Browser':'BL Roblox'):('Batal');
+  document.getElementById(_blTarget==='browser'?'dm-btnblb':'dm-btnbl').textContent=lbl;
+  if(!o){document.getElementById('dm-blr').focus();document.getElementById('dm-blw').querySelector('div').textContent='Blacklist HWID '+(_blTarget==='browser'?'Browser':'Roblox');}
+}
 function dmCp(id){navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>{const b=document.querySelector(`[onclick="dmCp('${id}')"]`);if(b){b.textContent='Tersalin';setTimeout(()=>b.textContent='Salin',1200);}});}
 async function dmRst(){if(!_dm||!confirm(`Reset HWID?\n${_dm.key}`))return;try{const res=await fetch(`${API}/api/dashboard`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:_sec,action:'resethwid',key:_dm.key})});const d=await res.json();if(d.success){closeDet();setDS('HWID direset.','o');loadKeys();}else alert(d.error||'Gagal.');}catch(e){alert('Kesalahan koneksi.');}}
 async function dmBL(){
-  if(!_dm||!_dm.hwid)return;
+  const targetHwid=_blTarget==='browser'?(_dm&&_dm.browserHwid):(_dm&&_dm.hwid);
+  if(!_dm||!targetHwid){document.getElementById('dm-bls').textContent='HWID tidak tersedia.';document.getElementById('dm-bls').style.color='var(--r)';return;}
   const r=(document.getElementById('dm-blr').value||'').trim(),d=parseInt(document.getElementById('dm-bld').value)||0,s=document.getElementById('dm-bls');
   if(!r){s.textContent='Alasan wajib diisi.';s.style.color='var(--r)';return;}
   s.textContent='Memproses...';s.style.color='var(--t2)';
-  try{const res=await fetch(`${API}/api/dashboard`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:_sec,action:'blacklist',hwid:_dm.hwid,reason:r,days:d})});const data=await res.json();if(data.success){s.textContent=`HWID diblacklist${d?` (${d} hari)`:' (permanent)'}.`;s.style.color='var(--g)';setTimeout(()=>{closeDet();loadKeys();},1200);}else{s.textContent=data.error||'Gagal.';s.style.color='var(--r)';}}
+  try{const res=await fetch(`${API}/api/dashboard`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:_sec,action:'blacklist',hwid:targetHwid,reason:r,days:d})});const data=await res.json();if(data.success){s.textContent=`HWID diblacklist${d?` (${d} hari)`:' (permanent)'}.`;s.style.color='var(--g)';setTimeout(()=>{closeDet();loadKeys();},1200);}else{s.textContent=data.error||'Gagal.';s.style.color='var(--r)';}}
   catch(e){s.textContent='Kesalahan koneksi.';s.style.color='var(--r)';}
 }
 document.getElementById('detModal').addEventListener('click',function(e){if(e.target===this)closeDet()});
