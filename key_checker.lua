@@ -6,7 +6,7 @@ local Players     = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
-local API_BASE  = "https://getkey-two.vercel.app/" -- ganti URL Vercel kamu
+local API_BASE  = "https://vh-api-alpha.vercel.app" -- ganti URL Vercel kamu
 local KEY_FILE  = "vh_key.txt"
 local RETRY_MAX = 3
 local TIMEOUT   = 10
