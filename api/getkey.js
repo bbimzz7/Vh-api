@@ -163,20 +163,21 @@ export default async function handler(req, res) {
 
         // ── HWID sudah punya key aktif ────────────────────────
         for (const [k, v] of Object.entries(keys)) {
-            if (v.hwid === hwid && new Date(v.expires).getTime() > now) {
-                // Kalau mode browser: cek username harus sama
-                if (finalSource === "browser" && username && v.username && v.username.toLowerCase() !== username.toLowerCase()) {
-                    return res.status(403).json({
-                        error: `Username tidak cocok. Key ini terdaftar atas nama "${v.username}".`
-                    });
-                }
+            const stillActive = new Date(v.expires).getTime() > now;
+            if (!stillActive) continue;
 
-                // Update username/userId jika berubah
+            // Mode browser: cocokkan berdasarkan username (hwid browser tidak disimpan di record)
+            // Mode script:  cocokkan berdasarkan hwid dari Roblox
+            const isMatch = finalSource === "browser"
+                ? (v.username && username && v.username.toLowerCase() === username.toLowerCase())
+                : (v.hwid === hwid);
+
+            if (isMatch) {
+                // Update userId jika berubah
                 let updated = false;
-                if (username && v.username !== username) { keys[k].username = username; updated = true; }
-                if (userId   && v.userId   !== userId)   { keys[k].userId   = userId;   updated = true; }
+                if (userId && v.userId !== userId) { keys[k].userId = userId; updated = true; }
                 if (updated) {
-                    await withRetry(() => ghPut(GITHUB_FILE, keys, keysSha, "update username"));
+                    await withRetry(() => ghPut(GITHUB_FILE, keys, keysSha, "update userId"));
                 }
                 return res.json({ key: k, expires: v.expires, reused: true, username: v.username });
             }
@@ -196,9 +197,12 @@ export default async function handler(req, res) {
             do { key = generateKey(); } while (freshKeys[key]);
 
             const expires = new Date(now + KEY_EXPIRE_MS).toISOString();
+            // Mode browser: hwid dikosongkan dulu, akan diisi saat checkkey dari Roblox
+            // Mode script:  hwid langsung dari Roblox
+            const savedHwid = finalSource === "browser" ? null : hwid;
             freshKeys[key] = {
                 expires,
-                hwid,
+                hwid:      savedHwid,
                 username:  username  || null,
                 userId:    userId    || null,
                 source:    finalSource,           // "browser" atau "script"
