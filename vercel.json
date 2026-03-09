@@ -1,13 +1,12 @@
 {
-  "version": 2,
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ],
-  "functions": {
-    "api/*.js": {
-      "memory": 128,
-      "maxDuration": 10
-    }
-  }
+  "rewrites": [
+    { "source": "/api/getkey",   "destination": "/api/getkey" },
+    { "source": "/api/checkkey", "destination": "/api/checkkey" },
+    { "source": "/api/token",    "destination": "/api/token" },
+    { "source": "/api/dashboard","destination": "/api/dashboard" },
+    { "source": "/getkey",       "destination": "/getkey/index.html" },
+    { "source": "/getkey/(.*)",  "destination": "/getkey/index.html" },
+    { "source": "/dashboard",    "destination": "/dashboard/index.html" },
+    { "source": "/dashboard/(.*)", "destination": "/dashboard/index.html" }
+  ]
 }
