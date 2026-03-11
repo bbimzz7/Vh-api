@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ambil Key — VertictHub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
   --bg:#0b0b0b;--s1:#111;--s2:#181818;--s3:#1f1f1f;
   --ln:rgba(255,255,255,0.07);--ln2:rgba(255,255,255,0.12);--ln3:rgba(255,255,255,0.20);
-  --amb:#e8a020;--amb2:#f5b840;
+  --amb:#2563eb;--amb2:#3b82f6;
   --t:#f2f2f0;--t2:#8a8a88;--t3:#484848;
   --g:#3ecf8e;--r:#f05050;--y:#f0c040;
-  --fD:'Chakra Petch',sans-serif;--fB:'DM Sans',sans-serif;--fM:'DM Mono',monospace;
+  --fD:'Inter', sans-serif;--fB:'Inter', sans-serif;--fM:'JetBrains Mono', monospace;
 }
 html,body{min-height:100vh}
 body{background:var(--bg);color:var(--t);font-family:var(--fB);overflow-x:hidden;line-height:1.6}
@@ -46,7 +46,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;background:rgba(11,11,11,.92
 .tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--ln2);border-radius:3px;overflow:hidden;margin-bottom:22px}
 .tab{padding:12px;border:none;background:var(--s1);color:var(--t2);font-family:var(--fD);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s;border-right:1px solid var(--ln2)}
 .tab:last-child{border-right:none}
-.tab.on{background:var(--amb);color:#000}
+.tab.on{background:var(--amb);color:#fff}
 .tab:not(.on):hover{color:var(--t);background:var(--s2)}
 
 /* CARD */
@@ -69,14 +69,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;background:rgba(11,11,11,.92
 /* INPUT */
 .igroup{margin-bottom:18px}
 .ifield{width:100%;padding:12px 14px;background:var(--s2);border:1px solid var(--ln);border-radius:3px;color:var(--t);font-family:var(--fB);font-size:15px;font-weight:500;outline:none;transition:border-color .15s,box-shadow .15s}
-.ifield:focus{border-color:var(--amb);box-shadow:0 0 0 2px rgba(232,160,32,.1)}
+.ifield:focus{border-color:var(--amb);box-shadow:0 0 0 2px rgba(59,130,246,.1)}
 .ifield::placeholder{color:var(--t3)}
 .ifield:disabled{opacity:.4;cursor:not-allowed}
 
 /* NOTICE */
 .notice{display:flex;align-items:flex-start;gap:11px;padding:12px 14px;border-radius:3px;font-size:13px;font-weight:500;line-height:1.65;margin-bottom:18px}
 .notice svg{width:14px;height:14px;flex-shrink:0;margin-top:2px}
-.n-info{background:rgba(232,160,32,.05);border:1px solid rgba(232,160,32,.14);color:var(--t2)}
+.n-info{background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.14);color:var(--t2)}
 .n-warn{background:rgba(240,192,64,.06);border:1px solid rgba(240,192,64,.2);color:var(--y)}
 .n-err{background:rgba(240,80,80,.06);border:1px solid rgba(240,80,80,.2);color:var(--r)}
 .n-ok{background:rgba(62,207,142,.06);border:1px solid rgba(62,207,142,.2);color:var(--g)}
@@ -85,7 +85,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;background:rgba(11,11,11,.92
 .btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:13px;border-radius:3px;border:none;font-family:var(--fD);font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .15s;text-decoration:none}
 .btn svg{width:15px;height:15px;flex-shrink:0}
 .btn:disabled{opacity:.35;cursor:not-allowed}
-.btn-amb{background:var(--amb);color:#000;box-shadow:0 0 28px rgba(232,160,32,.14)}
+.btn-amb{background:var(--amb);color:#fff;box-shadow:0 0 28px rgba(59,130,246,.14)}
 .btn-amb:hover:not(:disabled){background:var(--amb2)}
 .btn-out{background:transparent;color:var(--t2);border:1px solid var(--ln2)}
 .btn-out:hover:not(:disabled){color:var(--t);border-color:var(--ln3)}
@@ -117,8 +117,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;background:rgba(11,11,11,.92
 
 @keyframes up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-.sp{width:14px;height:14px;border-radius:50%;border:2px solid rgba(0,0,0,.2);border-top-color:#000;animation:spin .7s linear infinite}
-.sp.l{border-color:rgba(232,160,32,.2);border-top-color:var(--amb)}
+.sp{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin .7s linear infinite}
+.sp.l{border-color:rgba(59,130,246,.2);border-top-color:var(--amb)}
 
 @media(max-width:640px){
   nav{padding:0 20px}
