@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VertictHub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 
@@ -17,17 +17,17 @@
   --ln:   rgba(255,255,255,0.07);
   --ln2:  rgba(255,255,255,0.12);
   --ln3:  rgba(255,255,255,0.20);
-  --amb:  #e8a020;
-  --amb2: #f5b840;
-  --ambg: rgba(232,160,32,0.10);
+  --amb:  #2563eb;
+  --amb2: #3b82f6;
+  --ambg: rgba(59,130,246,0.10);
   --t:    #f2f2f0;
   --t2:   #8a8a88;
   --t3:   #484848;
   --g:    #3ecf8e;
   --r:    #f05050;
-  --fD:   'Chakra Petch', sans-serif;
-  --fB:   'DM Sans', sans-serif;
-  --fM:   'DM Mono', monospace;
+  --fD:   'Inter', sans-serif;
+  --fB:   'Inter', sans-serif;
+  --fM:   'JetBrains Mono', monospace;
 }
 
 html{scroll-behavior:smooth}
@@ -92,7 +92,7 @@ nav.on{
 .nav-links a:hover{color:var(--t);background:var(--ln)}
 .nav-cta{
   background:var(--amb) !important;
-  color:#000 !important;
+  color:#fff !important;
   font-weight:700 !important;
   border-radius:3px;padding:8px 18px !important;
 }
@@ -185,10 +185,10 @@ nav.on{
 }
 .btn svg{width:15px;height:15px;flex-shrink:0}
 .btn-amb{
-  background:var(--amb);color:#000;
-  box-shadow:0 0 32px rgba(232,160,32,.18);
+  background:var(--amb);color:#fff;
+  box-shadow:0 0 32px rgba(59,130,246,.18);
 }
-.btn-amb:hover{background:var(--amb2);box-shadow:0 0 48px rgba(232,160,32,.28)}
+.btn-amb:hover{background:var(--amb2);box-shadow:0 0 48px rgba(59,130,246,.28)}
 .btn-out{
   background:transparent;color:var(--t2);
   border:1px solid var(--ln2);
@@ -432,8 +432,8 @@ section{padding:120px 56px}
 }
 .step-warn{
   display:flex;align-items:flex-start;gap:12px;
-  background:rgba(232,160,32,.06);
-  border:1px solid rgba(232,160,32,.18);
+  background:rgba(59,130,246,.06);
+  border:1px solid rgba(59,130,246,.18);
   border-radius:3px;padding:13px 16px;
   margin-top:14px;
   font-size:13px;font-weight:600;color:var(--amb);
@@ -456,11 +456,11 @@ section{padding:120px 56px}
 }
 .sl-disc:hover{background:rgba(88,101,242,.2)}
 .sl-amb{
-  background:rgba(232,160,32,.1);
-  border:1px solid rgba(232,160,32,.25);
+  background:rgba(59,130,246,.1);
+  border:1px solid rgba(59,130,246,.25);
   color:var(--amb);
 }
-.sl-amb:hover{background:rgba(232,160,32,.18)}
+.sl-amb:hover{background:rgba(59,130,246,.18)}
 
 /* ─ CTA BANNER ─ */
 #cta{padding:0 56px 120px}
