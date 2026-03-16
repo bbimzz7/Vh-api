@@ -176,7 +176,7 @@ tbody tr:last-child td{border-bottom:none}
 .mac{display:flex;gap:8px;margin-top:14px}
 .mac .btn{flex:1}
 
-.empty{text-align:center;padding:44px;color:var(--t3);font-family:var(--fM);font-size:11px;letter-spacing:.5px}
+/* CHECKBOX */\n.cb-wrap{display:flex;align-items:center;justify-content:center}\n.cb{width:15px;height:15px;border-radius:2px;border:1px solid var(--ln2);background:var(--s2);cursor:pointer;flex-shrink:0;transition:all .12s;appearance:none;-webkit-appearance:none;position:relative}\n.cb:checked{background:var(--amb);border-color:var(--amb)}\n.cb:checked::after{content:'';position:absolute;top:1px;left:4px;width:4px;height:7px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg)}\n.cb:hover:not(:checked){border-color:var(--amb)}\n/* MULTI-SELECT BAR */\n.mbar{display:none;align-items:center;gap:10px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.2);border-radius:3px;padding:9px 14px;margin-bottom:10px;flex-wrap:wrap}\n.mbar.on{display:flex}\n.mbar-txt{font-family:var(--fM);font-size:11px;color:var(--amb);flex:1}\n/* GEO BADGE */\n.geo{display:inline-flex;align-items:center;gap:4px;font-family:var(--fM);font-size:10px;color:var(--t2)}\n.geo-flag{font-size:14px;line-height:1}\n
 #dStat{font-family:var(--fM);font-size:11px;text-align:center;min-height:18px;margin-top:10px;color:var(--t2)}
 
 @keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
@@ -266,12 +266,23 @@ tbody tr:last-child td{border-bottom:none}
       <!-- KEYS -->
       <div id="t-keys">
         <div class="tb">
+          <div class="cb-wrap" style="padding:0 4px">
+            <input type="checkbox" class="cb" id="cbAll" onclick="togAll(this)" title="Pilih semua">
+          </div>
           <div class="sb">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="sInput2" placeholder="Cari key, username, HWID..." oninput="renderTbl()">
+            <input type="text" id="sInput2" placeholder="Cari key, username, HWID, kota..." oninput="renderTbl()">
           </div>
           <button class="btn btn-amb btn-sm" onclick="togGF()">Generate</button>
           <button class="btn btn-r btn-sm" onclick="doBulkDel()">Hapus Expired</button>
+        </div>
+        <div class="mbar" id="mbar">
+          <span class="mbar-txt" id="mbar-txt">0 key dipilih</span>
+          <button class="btn btn-out btn-sm" onclick="clearSel()">Batal</button>
+          <button class="btn btn-r btn-sm" onclick="doDelSelected()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Hapus Terpilih
+          </button>
         </div>
         <div class="pills">
           <button class="pill on" onclick="setFil('all',this)">Semua</button>
@@ -292,9 +303,13 @@ tbody tr:last-child td{border-bottom:none}
         <div class="tw">
           <table>
             <thead><tr>
+              <th style="width:36px;text-align:center"></th>
               <th onclick="sb2('key')">Key <span class="si" id="si-key">↕</span></th>
               <th onclick="sb2('expired')">Status <span class="si" id="si-expired">↕</span></th>
-              <th>Username</th><th>Source</th><th>HWID</th>
+              <th>Username</th><th>Source</th>
+              <th>Lokasi Buat</th>
+              <th>Lokasi Terakhir</th>
+              <th>HWID</th>
               <th onclick="sb2('expires')">Expire <span class="si" id="si-expires">↕</span></th>
               <th onclick="sb2('createdAt')">Dibuat <span class="si" id="si-createdAt">↕</span></th>
               <th>Aksi</th>
@@ -407,6 +422,14 @@ tbody tr:last-child td{border-bottom:none}
       <div style="background:var(--s2);border:1px solid var(--ln);border-radius:3px;padding:9px"><div class="flabel">Source</div><div id="dm-src" style="font-size:12px;font-family:var(--fM)">—</div></div>
       <div style="background:var(--s2);border:1px solid var(--ln);border-radius:3px;padding:9px"><div class="flabel">Expire</div><div id="dm-exp" style="font-size:12px;font-family:var(--fM)">—</div></div>
     </div>
+    <div id="dm-georow" style="margin-bottom:11px;background:var(--s2);border:1px solid var(--ln);border-radius:3px;padding:9px 11px;display:none">
+      <div class="flabel">Lokasi Saat Buat Key</div>
+      <div id="dm-geo" style="font-size:12px;font-family:var(--fM);color:var(--t)">—</div>
+    </div>
+    <div id="dm-lastgeorow" style="margin-bottom:11px;background:var(--s2);border:1px solid rgba(62,207,142,.12);border-radius:3px;padding:9px 11px;display:none">
+      <div class="flabel" style="color:var(--g)">Lokasi Terakhir Pakai (Checkkey)</div>
+      <div id="dm-lastgeo" style="font-size:12px;font-family:var(--fM);color:var(--t)">—</div>
+    </div>
     <div id="dm-blw" style="display:none;margin-bottom:11px;background:rgba(240,80,80,.04);border:1px solid rgba(240,80,80,.18);border-radius:3px;padding:11px">
       <div style="font-size:10px;color:var(--r);font-family:var(--fM);margin-bottom:7px;text-transform:uppercase;letter-spacing:1.5px">Blacklist HWID</div>
       <input type="text" id="dm-blr" placeholder="Alasan..." maxlength="200" style="width:100%;background:var(--s2);border:1px solid rgba(240,80,80,.25);border-radius:3px;padding:7px 10px;color:var(--t);font-family:var(--fM);font-size:11px;outline:none;margin-bottom:7px">
@@ -442,7 +465,51 @@ function fmtWIBFull(iso) {
   return d.toLocaleString('id-ID', {timeZone:'Asia/Jakarta', day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) + ' WIB';
 }
 const API=location.origin;
-let _sec='',_keys=[],_fil='all',_sc='createdAt',_sd=-1,_ek='',_dm=null;
+let _sec='',_keys=[],_fil='all',_sc='createdAt',_sd=-1,_ek='',_dm=null,_sel=new Set();
+
+// ── Geo helpers ───────────────────────────────────────────────
+function ccToFlag(cc){if(!cc)return'';return cc.toUpperCase().replace(/./g,c=>String.fromCodePoint(127397+c.charCodeAt(0)));}
+function geoStr(geo){
+  if(!geo)return'<span style="color:var(--t3);font-family:var(--fM);font-size:10px">—</span>';
+  const flag=ccToFlag(geo.cc);
+  const loc=[geo.city,geo.region,geo.country].filter(Boolean).join(', ')||geo.ip||'—';
+  return `<span class="geo"><span class="geo-flag">${flag}</span><span title="${geo.ip||''}">${loc}</span></span>`;
+}
+
+// ── Selection helpers ─────────────────────────────────────────
+function updMbar(){
+  const n=_sel.size,bar=document.getElementById('mbar'),txt=document.getElementById('mbar-txt');
+  bar.classList.toggle('on',n>0);
+  if(txt)txt.textContent=n+' key dipilih';
+  const cbAll=document.getElementById('cbAll');
+  if(cbAll){const vis=getVisibleKeys();cbAll.indeterminate=n>0&&n<vis.length;cbAll.checked=vis.length>0&&n>=vis.length;}
+}
+function getVisibleKeys(){
+  const q=(document.getElementById('sInput2').value||'').toLowerCase();
+  return _keys.filter(k=>{
+    if(_fil==='active'&&k.expired)return false;if(_fil==='expired'&&!k.expired)return false;
+    if(_fil==='bound'&&!k.hwid)return false;if(_fil==='free'&&k.hwid)return false;
+    if(q)return k.key.toLowerCase().includes(q)||(k.hwid||'').toLowerCase().includes(q)||(k.username||'').toLowerCase().includes(q)||(k.geo&&JSON.stringify(k.geo).toLowerCase().includes(q));
+    return true;
+  });
+}
+function togAll(cbEl){
+  const vis=getVisibleKeys();
+  if(cbEl.checked){vis.forEach(k=>_sel.add(k.key));}else{_sel.clear();}
+  updMbar();renderTbl();
+}
+function togRow(key,e){e.stopPropagation();if(_sel.has(key)){_sel.delete(key);}else{_sel.add(key);}updMbar();renderTbl();}
+function clearSel(){_sel.clear();const cbAll=document.getElementById('cbAll');if(cbAll)cbAll.checked=false;updMbar();renderTbl();}
+
+async function doDelSelected(){
+  const keys=[..._sel];if(!keys.length)return;
+  if(!confirm(`Hapus ${keys.length} key terpilih?`))return;
+  try{
+    const res=await fetch(`${API}/api/dashboard`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:_sec,action:'bulkdeleteselected',keys})});
+    const d=await res.json();
+    if(d.success){clearSel();setDS(`${d.deleted} key dihapus.`,'o');loadKeys();}else setDS(d.error||'Gagal.','e');
+  }catch(e){setDS('Kesalahan koneksi.','e');}
+}
 
 async function doLogin(){
   const s=document.getElementById('sInput').value.trim();if(!s)return;
@@ -472,6 +539,7 @@ async function loadKeys(){
   try{
     const res=await fetch(`${API}/api/dashboard?secret=${encodeURIComponent(_sec)}&action=list`);
     const d=await res.json();_keys=d.keys||[];if(d.config)window._cfg=d.config;
+    _sel.clear();
     rStats(d.stats);renderTbl();buildChart();
     document.getElementById('lUpd').textContent='Diperbarui '+new Date().toLocaleTimeString('id-ID');
     setDS('Data diperbarui.','o');
@@ -501,20 +569,24 @@ function renderTbl(){
   let rows=_keys.filter(k=>{
     if(_fil==='active'&&k.expired)return false;if(_fil==='expired'&&!k.expired)return false;
     if(_fil==='bound'&&!k.hwid)return false;if(_fil==='free'&&k.hwid)return false;
-    if(q)return k.key.toLowerCase().includes(q)||(k.hwid||'').toLowerCase().includes(q)||(k.username||'').toLowerCase().includes(q);
+    if(q)return k.key.toLowerCase().includes(q)||(k.hwid||'').toLowerCase().includes(q)||(k.username||'').toLowerCase().includes(q)||(k.geo&&JSON.stringify(k.geo).toLowerCase().includes(q));
     return true;
   });
   rows.sort((a,b)=>{let va=a[_sc]||'',vb=b[_sc]||'';if(typeof va==='boolean'){va=va?1:0;vb=vb?1:0;}return va<vb?-_sd:va>vb?_sd:0;});
   const tbody=document.getElementById('tBody');
   document.getElementById('tInfo').textContent=`${rows.length} dari ${_keys.length} key ditampilkan`;
-  if(!rows.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty">Tidak ada key ditemukan.</div></td></tr>`;return;}
+  if(!rows.length){tbody.innerHTML=`<tr><td colspan="11"><div class="empty">Tidak ada key ditemukan.</div></td></tr>`;return;}
   tbody.innerHTML=rows.map(k=>{
     const hs=k.hwid?k.hwid.substring(0,14)+'…':'';const ke=k.key.replace(/'/g,"\\'");
-    return `<tr onclick="openDet('${ke}')">
+    const chk=_sel.has(k.key)?'checked':'';
+    return `<tr onclick="openDet('${ke}')" ${_sel.has(k.key)?'style="background:rgba(59,130,246,.06)"':''}>
+      <td style="text-align:center" onclick="togRow('${ke}',event)"><input type="checkbox" class="cb" ${chk} onclick="togRow('${ke}',event)"></td>
       <td style="font-family:var(--fM);font-size:11px;color:var(--amb)">${k.key}</td>
       <td><span class="badge ${k.expired?'br':'bg'}">${k.expired?'Expired':'Aktif'}</span></td>
       <td style="font-family:var(--fM);font-size:11px">${k.username||'<span style="color:var(--t3)">—</span>'}</td>
       <td><span class="badge bm">${k.source||'script'}</span></td>
+      <td>${geoStr(k.geo)}</td>
+      <td>${geoStr(k.lastGeo)}</td>
       <td style="font-family:var(--fM);font-size:10px;color:var(--t2)" title="${k.hwid||''}">${k.hwid?hs:'<span style="color:var(--t3)">Bebas</span>'}</td>
       <td style="font-family:var(--fM);font-size:11px;color:${k.expired?'var(--r)':'var(--t)'}">${fmtWIB(k.expires)}</td>
       <td style="font-family:var(--fM);font-size:11px;color:var(--t2)">${fmtWIB(k.createdAt)}</td>
@@ -525,6 +597,7 @@ function renderTbl(){
       </td>
     </tr>`;
   }).join('');
+  updMbar();
 }
 function togGF(){document.getElementById('gf').classList.toggle('on')}
 async function doGenKey(){
@@ -571,6 +644,24 @@ function openDet(key){
   document.getElementById('dm-un').textContent=k.username||'—';
   document.getElementById('dm-src').textContent=k.source||'script';
   document.getElementById('dm-exp').textContent=fmtWIB(k.expires, true);
+  // Geo
+  const georow=document.getElementById('dm-georow');
+  const geodiv=document.getElementById('dm-geo');
+  if(k.geo&&(k.geo.city||k.geo.country||k.geo.ip)){
+    georow.style.display='block';
+    const flag=ccToFlag(k.geo.cc);
+    const loc=[k.geo.city,k.geo.region,k.geo.country].filter(Boolean).join(', ')||'—';
+    geodiv.innerHTML=`${flag} ${loc} <span style="color:var(--t3);font-size:10px">(${k.geo.ip||''})</span>`;
+  } else {georow.style.display='none';}
+  const lastgeorow=document.getElementById('dm-lastgeorow');
+  const lastgeodiv=document.getElementById('dm-lastgeo');
+  if(k.lastGeo&&(k.lastGeo.city||k.lastGeo.country||k.lastGeo.ip)){
+    lastgeorow.style.display='block';
+    const flag2=ccToFlag(k.lastGeo.cc);
+    const loc2=[k.lastGeo.city,k.lastGeo.region,k.lastGeo.country].filter(Boolean).join(', ')||'—';
+    const sameAsGeo=k.geo&&k.geo.ip===k.lastGeo.ip;
+    lastgeodiv.innerHTML=`${flag2} ${loc2} <span style="color:var(--t3);font-size:10px">(${k.lastGeo.ip||''})</span>${sameAsGeo?' <span style="color:var(--t3);font-size:10px">— sama dengan lokasi buat</span>':''}`;
+  } else {lastgeorow.style.display='none';}
   const st=document.getElementById('dm-st');st.textContent=k.expired?'Expired':'Aktif';st.style.color=k.expired?'var(--r)':'var(--g)';
   document.getElementById('dm-blw').style.display='none';
   document.getElementById('dm-blr').value='';document.getElementById('dm-bld').value='0';document.getElementById('dm-bls').textContent='';
