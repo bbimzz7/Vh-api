@@ -109,6 +109,8 @@ export default async function handler(req, res) {
                 createdAt:   v.createdAt   || null,
                 lastUsed:    v.lastUsed    || null,
                 blacklisted: !!(bl2[v.hwid] || (v.browserHwid && bl2[v.browserHwid])),
+                geo:         v.geo         || null,
+                lastGeo:     v.lastGeo     || null,
             }));
             const total       = list.length;
             const active      = list.filter(x => !x.expired).length;
@@ -150,6 +152,20 @@ export default async function handler(req, res) {
             await ghPut(GITHUB_FILE, keys, sha, "delete key");
             addLog("delete", `Key ${key} dihapus`);
             return res.json({ success: true });
+        }
+
+        // ── BULK DELETE SELECTED ──────────────────────────────
+        if (action === "bulkdeleteselected") {
+            const selectedKeys = (req.body.keys || []).map(k => k.toUpperCase());
+            if (!selectedKeys.length) return res.json({ error: "Tidak ada key yang dipilih" });
+            const { data: keys, sha } = await ghGet(GITHUB_FILE);
+            let count = 0;
+            for (const k of selectedKeys) {
+                if (keys[k]) { delete keys[k]; count++; }
+            }
+            if (count > 0) await ghPut(GITHUB_FILE, keys, sha, `bulk delete ${count} selected`);
+            addLog("bulkdelete", `${count} key terpilih dihapus`);
+            return res.json({ success: true, deleted: count });
         }
 
         // ── BULK DELETE EXPIRED ───────────────────────────────

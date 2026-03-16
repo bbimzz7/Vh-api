@@ -119,8 +119,28 @@ export default async function handler(req, res) {
             }
         }
 
-        // ── Update lastUsed + username ────────────────────────
+        // ── Geo lookup (parallel, non-blocking) ──────────────
+        let lastGeo = null;
+        try {
+            const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,countryCode,regionName,city`);
+            if (geoRes.ok) {
+                const geoData = await geoRes.json();
+                if (geoData.status === "success") {
+                    lastGeo = {
+                        ip:      ip,
+                        city:    geoData.city        || null,
+                        region:  geoData.regionName  || null,
+                        country: geoData.country     || null,
+                        cc:      geoData.countryCode || null,
+                    };
+                }
+            }
+        } catch { /* geo gagal, lanjut */ }
+        if (!lastGeo) lastGeo = { ip, city: null, region: null, country: null, cc: null };
+
+        // ── Update lastUsed + username + lastGeo ─────────────
         keys[key].lastUsed = new Date().toISOString();
+        keys[key].lastGeo  = lastGeo;
         if (username && keys[key].username !== username) keys[key].username = username;
         if (userId   && keys[key].userId   !== userId)   keys[key].userId   = userId;
 
@@ -139,6 +159,7 @@ export default async function handler(req, res) {
                     const fresh = await ghGet(GITHUB_FILE);
                     if (fresh.data[key]) {
                         fresh.data[key].lastUsed = retryKeys[key].lastUsed;
+                        fresh.data[key].lastGeo  = lastGeo;
                         if (isFirstBind) {
                             fresh.data[key].hwid    = hwid;
                             fresh.data[key].boundAt = retryKeys[key].boundAt;

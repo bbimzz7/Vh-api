@@ -210,6 +210,25 @@ export default async function handler(req, res) {
         if (maxTotal  > 0 && totalActive >= maxTotal)  return res.status(429).json({ error: `Limit tercapai! Max ${maxTotal} key aktif.` });
         if (maxPerDay > 0 && todayCount  >= maxPerDay) return res.status(429).json({ error: `Limit harian tercapai! Max ${maxPerDay}/hari.` });
 
+        // ── Geo IP lookup ─────────────────────────────────────
+        let geoInfo = null;
+        try {
+            const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,countryCode,regionName,city`);
+            if (geoRes.ok) {
+                const geoData = await geoRes.json();
+                if (geoData.status === "success") {
+                    geoInfo = {
+                        ip:      ip,
+                        city:    geoData.city        || null,
+                        region:  geoData.regionName  || null,
+                        country: geoData.country     || null,
+                        cc:      geoData.countryCode || null,
+                    };
+                }
+            }
+        } catch { /* geo gagal, lanjut */ }
+        if (!geoInfo) geoInfo = { ip, city: null, region: null, country: null, cc: null };
+
         // ── Generate key baru ─────────────────────────────────
         let resultKey, resultExpires;
 
@@ -232,6 +251,7 @@ export default async function handler(req, res) {
                 source:      finalSource,           // "browser" atau "script"
                 createdAt:   new Date().toISOString(),
                 lastUsed:    null,
+                geo:         geoInfo,
             };
 
             await ghPut(GITHUB_FILE, freshKeys, freshSha, "generate key");
